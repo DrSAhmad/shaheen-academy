@@ -99,10 +99,19 @@
   }
 
   /* ---------------- 2. Daily visitor counter (SIMULATED demo) ----------------
-     Deterministic per-day value: 4500 + (FNV-1a('YYYY-MM-DD') % 600).
-     Range 4500–5099: stable all day, different each day, never below
-     4500. The +1 tick every ~45s (capped at +40) is purely cosmetic so
-     the page feels alive. THIS IS NOT REAL ANALYTICS — front-end demo. */
+     Deterministic per-day BASE: 4500 + (FNV-1a('YYYY-MM-DD') % 600),
+     range 4500-5099 - stable all day, different each day, never below
+     4500. On top of the base, a LIVE random walk keeps the number
+     visibly moving: every 3-6 seconds (randomized) the displayed total
+     shifts by a weighted delta - 70% +1, 15% +2, 10% +3, 5% -1 -
+     floored so the total never shows below 4500. The day's accumulated
+     offset persists in localStorage (key 'shaheen-visitors-v1' as
+     {date, offset}) so a reload continues from the last shown number
+     instead of jumping backwards; the offset resets when the date
+     changes. Every change animates (flash + pulse) and a pulsing LIVE
+     dot marks the card. A "learning now" sub-line random-walks 90-220
+     in sessionStorage only.
+     THIS IS NOT REAL ANALYTICS - front-end demo, labelled as such. */
   function hashStr(s) {
     var h = 2166136261;
     for (var i = 0; i < s.length; i++) {
@@ -111,15 +120,69 @@
     }
     return h >>> 0;
   }
-  function dailyBase() { return 4500 + (hashStr(dayStr(new Date())) % 600); }
-  var liveTick = 0; // cosmetic tick, capped at +40 per page session
-  function visitorNow() { return dailyBase() + liveTick; }
-  setInterval(function () {
-    if (liveTick >= 40) return;
-    liveTick += 1;
+  function visitorBase() { return 4500 + (hashStr(dayStr(new Date())) % 600); }
+
+  var VIS_KEY = 'shaheen-visitors-v1'; // { date: 'YYYY-MM-DD', offset: n }
+  function visitorStore() {
+    var today = dayStr(new Date());
+    var s = lsGet(VIS_KEY, null);
+    if (!s || typeof s !== 'object' || s.date !== today || typeof s.offset !== 'number') {
+      s = { date: today, offset: 0 }; // new day (or first visit): start fresh
+      lsSet(VIS_KEY, s);
+    }
+    return s;
+  }
+  function visitorNow() {
+    return Math.max(4500, visitorBase() + visitorStore().offset);
+  }
+  // Restartable pulse so every tick is visible.
+  function flashNum(el) {
+    if (!el || !el.classList) return;
+    try {
+      el.classList.remove('tick-flash');
+      void el.offsetWidth; // force reflow: restarts the CSS animation
+      el.classList.add('tick-flash');
+    } catch (e) { /* stub-safe */ }
+  }
+  function paintVisitor(animate) {
     var el = $('visitor-count');
-    if (el) el.textContent = fmtNum(visitorNow());
-  }, 45000);
+    if (!el) return;
+    el.textContent = fmtNum(visitorNow());
+    if (animate) flashNum(el);
+  }
+  function bumpVisitor() {
+    var st = visitorStore();
+    var r = Math.random();
+    var d = r < 0.70 ? 1 : r < 0.85 ? 2 : r < 0.95 ? 3 : -1;
+    st.offset += d;
+    if (visitorBase() + st.offset < 4500) st.offset = 4500 - visitorBase(); // floor at 4500
+    lsSet(VIS_KEY, st);
+    paintVisitor(true);
+  }
+  // Randomized 3-6s loop: the counter feels continuously alive.
+  (function visitorLoop() {
+    setTimeout(function () { bumpVisitor(); visitorLoop(); }, 3000 + Math.random() * 3000);
+  })();
+
+  /* "N learning now" - session-only random walk, clamped 90-220. */
+  var LEARN_KEY = 'shaheen-learning-now';
+  var learnNow = (function () {
+    var n = NaN;
+    try { n = parseInt(sessionStorage.getItem(LEARN_KEY), 10); } catch (e) {}
+    if (!(n >= 90 && n <= 220)) n = 90 + Math.floor(Math.random() * 131);
+    return n;
+  })();
+  function bumpLearning() {
+    learnNow += Math.floor(Math.random() * 13) - 6; // -6..+6
+    if (learnNow < 90) learnNow = 90;
+    if (learnNow > 220) learnNow = 220;
+    try { sessionStorage.setItem(LEARN_KEY, String(learnNow)); } catch (e) {}
+    var el = $('learning-now');
+    if (el) { el.textContent = fmtNum(learnNow); flashNum(el); }
+  }
+  (function learningLoop() {
+    setTimeout(function () { bumpLearning(); learningLoop(); }, 5000 + Math.random() * 3000);
+  })();
 
   // Injected into the home view after the engine renders it.
   function injectVisitorCard() {
@@ -129,7 +192,8 @@
     var html =
       '<section class="card visitor-card" aria-label="Learners visiting today">' +
         '<div class="visitor-num" id="visitor-count">' + fmtNum(visitorNow()) + '</div>' +
-        '<div class="visitor-label">👥 learners visited today</div>' +
+        '<div class="visitor-label"><span class="live-dot" aria-hidden="true"></span>LIVE · 👥 learners visited today</div>' +
+        '<div class="visitor-sub"><span id="learning-now">' + fmtNum(learnNow) + '</span> learning now</div>' +
         '<div class="visitor-demo"><span class="visitor-demo-tag">demo counter</span></div>' +
       '</section>';
     var anchor = app.querySelector('.stat-grid');
@@ -645,7 +709,7 @@
     }
     else if (a === 'auth-menu-link') { var mm2 = $('auth-menu'); if (mm2) mm2.hidden = true; }
     else if (a === 'auth-signout') { signOut(); }
-    else if (a === 'enroll-need-auth') { openAuth('signup', 'Please join / sign in to enroll in this class.'); }
+    else if (a === 'enroll-need-auth') { location.hash = '#/login?next=' + encodeURIComponent('#/live'); }
     else if (a === 'enroll') {
       if (!currentUser()) { openAuth('signup', 'Please join / sign in to enroll.'); return; }
       enroll(el.getAttribute('data-id'));
@@ -708,7 +772,13 @@
       renderAuthArea(); // keep the header chip in sync after navigation
     },
     openAuth: openAuth,
-    currentUser: currentUser
+    currentUser: currentUser,
+    // v3: lets the dedicated #/login page sync the module-level auth
+    // tab/role before its form submits through the shared handler.
+    setAuth: function (tab, role) {
+      authTab = (tab === 'signin') ? 'signin' : 'signup';
+      if (role === 'student' || role === 'teacher' || role === 'parent') authRole = role;
+    }
   };
 })();
 /* ============================================================
@@ -1018,6 +1088,10 @@
     else if (p[0] === 'certificate')        html = vCertificate(p[1]);
     else if (p[0] === 'live')               html = (window.__saV2 && window.__saV2.vLive) ? window.__saV2.vLive() : vNotFound();
     else if (p[0] === 'account')            html = (window.__saV2 && window.__saV2.vAccount) ? window.__saV2.vAccount() : vNotFound();
+    else if (p[0] === 'about')              html = (window.__saV3 && window.__saV3.vAbout) ? window.__saV3.vAbout() : vNotFound();
+    else if (p[0] === 'contact')            html = (window.__saV3 && window.__saV3.vContact) ? window.__saV3.vContact() : vNotFound();
+    else if (p[0] === 'login')              html = (window.__saV3 && window.__saV3.vLogin) ? window.__saV3.vLogin(r.query || {}) : vNotFound();
+    else if (p[0] === 'blog')               html = (window.__saV3 && window.__saV3.vBlog) ? window.__saV3.vBlog(p[1] || null, r.query || {}) : vNotFound();
     else                                    html = vNotFound();
 
     appEl.innerHTML = html;
@@ -1025,6 +1099,8 @@
     syncNav(p[0]);
     // v2 hook: injects the visitor card on home, keeps the header auth chip in sync.
     if (window.__saV2 && window.__saV2.afterRender) { try { window.__saV2.afterRender(p[0]); } catch (e) {} }
+    // v3 hook: home blog teasers; login page keeps auth state synced.
+    if (window.__saV3 && window.__saV3.afterRender) { try { window.__saV3.afterRender(p[0], r.query || {}); } catch (e) {} }
   }
 
   function syncNav(route) {
@@ -1621,4 +1697,385 @@
       navigator.serviceWorker.register('./sw.js').catch(function () { /* offline-first is best-effort */ });
     });
   }
+})();
+/* ============================================================
+   Shaheen Academy — v3 pages (front-end only)
+   Added 2026-10-18. Self-contained IIFE appended AFTER the
+   engine. Exposes window.__saV3 = { vAbout, vContact, vLogin,
+   vBlog, afterRender }, consumed by the engine router:
+     #/about, #/contact, #/login, #/blog, #/blog/<post-id>
+   The login page REUSES the v2 auth logic: its form carries
+   data-v2form="auth" so the v2 submit handler processes it, and
+   this module syncs the v2 module-level auth tab/role via the
+   __saV2.setAuth() bridge before submit. Auth remains a
+   localStorage-only demo prototype.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* ---------------- tiny helpers (self-contained) ---------------- */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function $(id) { return document.getElementById(id); }
+
+  function saV2() { return window.__saV2 || null; }
+  function currentUser() {
+    var v = saV2();
+    return (v && v.currentUser) ? v.currentUser() : null;
+  }
+  // Re-run the engine router (it listens for 'hashchange').
+  function rerender() {
+    try { window.dispatchEvent(new Event('hashchange')); } catch (e) {}
+  }
+
+  /* ---------------- blog data ---------------- */
+  function blogPosts() {
+    return Array.isArray(window.SHAHEEN_BLOG) ? window.SHAHEEN_BLOG : [];
+  }
+  function findPost(id) {
+    var posts = blogPosts();
+    for (var i = 0; i < posts.length; i++) {
+      if (posts[i] && posts[i].id === id) return posts[i];
+    }
+    return null;
+  }
+  function blogCats() {
+    var seen = {}, cats = [];
+    blogPosts().forEach(function (p) {
+      if (p && p.category && !seen[p.category]) { seen[p.category] = 1; cats.push(p.category); }
+    });
+    return cats;
+  }
+  function fmtPostDate(iso) {
+    try {
+      var d = new Date(iso + 'T00:00:00');
+      return d.toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+    } catch (e) { return iso || ''; }
+  }
+
+  /* ---------------- live site stats (computed from data files) ---------------- */
+  function siteStats() {
+    var s = { courses: 0, chapters: 0, lessons: 0, mcqs: 0 };
+    try {
+      var T = window.SHAHEEN_TRACKS || {};
+      Object.keys(T).forEach(function (tk) {
+        var cs = (T[tk] && T[tk].courses) || [];
+        cs.forEach(function (c) {
+          s.courses++;
+          (c.chapters || []).forEach(function (ch) {
+            if (ch.comingSoon) return; // honest counting: only real chapters
+            s.chapters++;
+            s.lessons += (ch.lessons || []).length;
+            s.mcqs += (ch.quiz || []).length;
+          });
+        });
+      });
+    } catch (e) { /* keep zeros */ }
+    return s;
+  }
+  function fmtNum(n) {
+    try { return Number(n).toLocaleString('en-US'); } catch (e) { return String(n); }
+  }
+
+  /* ---------------- 1. About ---------------- */
+  function vAbout() {
+    var st = siteStats();
+    var h = '<h1 class="page-title">🦅 About Shaheen Academy</h1>' +
+      '<p class="page-sub">Learn Without Limits</p>' +
+
+      '<section class="card"><h2 style="margin-top:0">Our mission</h2>' +
+      '<p><strong>Shaheen Academy exists so that every learner in Pakistan — and every Urdu speaker worldwide — can learn without limits.</strong> ' +
+      'Quality education should not depend on where you live or what you can pay. That is why everything here is <strong>free, forever</strong>: ' +
+      'full courses, lessons, quizzes, and certificates, on any phone, even offline after your first visit.</p>' +
+      '<p>The <em>Shaheen</em> — the falcon — is Allama Iqbal’s timeless symbol of the high-aspiring soul: it flies above the ordinary, ' +
+      'sees far, and never settles for less than its best. We named this academy after it because that is exactly what we want every ' +
+      'student, teacher, and parent here to become.</p></section>' +
+
+      '<section class="card"><h2 style="margin-top:0">What you’ll find here</h2>' +
+      '<div class="about-tracks">' +
+        '<a class="card-link" href="#/track/school"><div class="card about-mini"><span class="big" aria-hidden="true">🏫</span><h3>School</h3><p class="small muted">Complete Class 1–12 curriculum on the Punjab Board syllabus — lessons and quizzes chapter by chapter.</p></div></a>' +
+        '<a class="card-link" href="#/track/testprep"><div class="card about-mini"><span class="big" aria-hidden="true">🎯</span><h3>Test Prep</h3><p class="small muted">MDCAT, ECAT, and CSS — MCQ banks with explanations, revision notes, and exam strategy.</p></div></a>' +
+        '<a class="card-link" href="#/track/skills"><div class="card about-mini"><span class="big" aria-hidden="true">💼</span><h3>Skills</h3><p class="small muted">Web development, Python, freelancing, and digital marketing — practical skills for earning.</p></div></a>' +
+      '</div>' +
+      '<p class="small" style="margin-top:12px"><a href="#/live">🎥 Live Classes</a> · <a href="#/blog">✍️ Blog</a> — learn live with teachers and read exam guides.</p></section>' +
+
+      '<section class="card"><h2 style="margin-top:0">The library, right now</h2>' +
+      '<div class="stat-grid">' +
+        '<div class="stat-card"><div class="stat-num">' + fmtNum(st.courses) + '</div><div class="stat-label">courses</div></div>' +
+        '<div class="stat-card"><div class="stat-num">' + fmtNum(st.lessons) + '</div><div class="stat-label">lessons</div></div>' +
+        '<div class="stat-card"><div class="stat-num">' + fmtNum(st.mcqs) + '</div><div class="stat-label">practice questions</div></div>' +
+        '<div class="stat-card"><div class="stat-num">🔥 XP</div><div class="stat-label">levels &amp; streaks</div></div>' +
+      '</div>' +
+      '<p class="small muted" style="margin-bottom:0">Counts are computed live from the course library — and the library keeps growing.</p></section>' +
+
+      '<section class="card honesty"><h2 style="margin-top:0">Our honest promise</h2>' +
+      '<ul class="tight-list">' +
+      '<li><strong>Free forever.</strong> No fees, no paywalls, no premium tiers.</li>' +
+      '<li><strong>Certificates are completion awards.</strong> They celebrate your effort; they are internal awards of Shaheen Academy and <strong>not</strong> an official board, university, HEC, or government accreditation.</li>' +
+      '<li><strong>“Coming soon” means coming soon.</strong> Chapters still being written are clearly labelled — never faked.</li>' +
+      '<li><strong>Your data stays yours.</strong> Progress and demo accounts live on your own device; we run no tracking.</li>' +
+      '</ul></section>';
+    return h;
+  }
+
+  /* ---------------- 2. Contact + FAQ ---------------- */
+  var FAQS = [
+    ['Is Shaheen Academy really free?', 'Yes — completely and permanently. Every course, lesson, quiz, live class listing, and certificate costs nothing. There are no accounts to pay for and no premium tiers.'],
+    ['Do I need an account to learn?', 'No. You can study every lesson and take every quiz without signing in. The optional demo account (Student, Teacher, or Parent) unlocks dashboards, class enrolment, and teacher tools — and it lives only on your own device.'],
+    ['Are the certificates officially recognised?', 'No, and we will never claim otherwise. Certificates are internal completion awards that celebrate your effort. They are not board, university, HEC, or government accreditation.'],
+    ['How do live classes work?', 'Teachers publish a class schedule under Live Classes. Enrol in any class with a free demo account, then join at class time. The classroom is currently a prototype — a demo video area, chat, and raise-hand — while real video classes are being built.'],
+    ['Which curriculum does the school section follow?', 'The school track follows the Punjab Board / Single National Curriculum chapter structure for Classes 1–12. Core exam classes (9 and 10) carry full lessons and quizzes; other classes are being filled chapter by chapter and are honestly marked “coming soon”.'],
+    ['Is my personal data safe?', 'Your learning progress and any demo account details are stored in your own browser’s local storage — on your device only. We run no analytics tracking and nothing is sent to any server.']
+  ];
+
+  function vContact() {
+    var h = '<h1 class="page-title">✉️ Contact Us</h1>' +
+      '<p class="page-sub">Questions, feedback, or ideas — we’d love to hear from you.</p>' +
+      '<section class="card"><h2 style="margin-top:0">Send a message</h2>' +
+      '<p class="small muted">This opens <strong>your own email app</strong> with the message pre-filled — nothing is sent automatically, and we never see your address unless you press send.</p>' +
+      '<form data-v3form="contact">' +
+      '<label class="v2-label" for="c-name">Your name</label>' +
+      '<input class="v2-input" id="c-name" name="name" type="text" maxlength="60" placeholder="e.g. Ali Raza" required autocomplete="name">' +
+      '<label class="v2-label" for="c-email">Your email</label>' +
+      '<input class="v2-input" id="c-email" name="email" type="email" maxlength="120" placeholder="you@example.com" required autocomplete="email">' +
+      '<label class="v2-label" for="c-subject">Subject</label>' +
+      '<input class="v2-input" id="c-subject" name="subject" type="text" maxlength="100" placeholder="e.g. Question about MDCAT prep" required>' +
+      '<label class="v2-label" for="c-msg">Message</label>' +
+      '<textarea class="v2-input v2-textarea" id="c-msg" name="message" rows="5" maxlength="2000" placeholder="Write your message…" required></textarea>' +
+      '<button class="btn btn-primary btn-block" type="submit" style="margin-top:14px">📧 Open email app to send</button>' +
+      '<p class="demo-note" id="contact-sent" hidden>✓ Your email app should now be open with the message ready — just press send there.</p>' +
+      '</form></section>' +
+      '<section class="card"><h2 style="margin-top:0">Frequently asked questions</h2>' +
+      '<div class="faq">' +
+      FAQS.map(function (f) {
+        return '<details class="faq-item"><summary>' + esc(f[0]) + '</summary><p>' + esc(f[1]) + '</p></details>';
+      }).join('') +
+      '</div></section>';
+    return h;
+  }
+
+  function handleContact(form) {
+    var name = ((form.name && form.name.value) || '').trim().slice(0, 60);
+    var email = ((form.email && form.email.value) || '').trim().slice(0, 120);
+    var subject = ((form.subject && form.subject.value) || '').trim().slice(0, 100);
+    var msg = ((form.message && form.message.value) || '').trim().slice(0, 2000);
+    if (!name || !email || !subject || !msg) return; // native `required` handles messaging
+    var body = 'Name: ' + name + '\nEmail: ' + email + '\n\n' + msg;
+    // Open-email-app pattern: NO recipient is hardcoded; the visitor
+    // addresses the message themselves in their own email app.
+    try {
+      window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) +
+        '&body=' + encodeURIComponent(body);
+    } catch (e) { /* best effort */ }
+    var note = $('contact-sent');
+    if (note) note.hidden = false;
+  }
+
+  /* ---------------- 3. Login page (reuses the v2 auth logic) ---------------- */
+  var loginState = { tab: 'signup', role: 'student' }; // mirrors the v2 module state
+  var pendingNext = null; // set when a guest is sent here; used after sign-in
+
+  var LOGIN_ROLES = [
+    { key: 'student', label: 'Student', icon: '🎒' },
+    { key: 'teacher', label: 'Teacher', icon: '👩‍🏫' },
+    { key: 'parent',  label: 'Parent',  icon: '👪' }
+  ];
+  var ROLE_BADGE = { student: 'badge-ok', teacher: 'badge-gold', parent: 'badge-soon' };
+  var ROLE_LABEL = { student: 'Student', teacher: 'Teacher', parent: 'Parent' };
+
+  // Keep the v2 module-level auth tab/role in sync so the shared
+  // handleAuthSubmit() (triggered by data-v2form="auth") uses the
+  // tab and role the visitor chose on THIS page.
+  function syncAuthState() {
+    var v = saV2();
+    if (v && v.setAuth) v.setAuth(loginState.tab, loginState.role);
+  }
+
+  function validNext(n) {
+    return (typeof n === 'string' && /^#\/(live|account|home|blog|progress|about|contact)/.test(n)) ? n : null;
+  }
+
+  function vLogin(query) {
+    var u = currentUser();
+    if (u) {
+      // Logged in: leave pendingNext alone — the hashchange listener
+      // consumes it for the post-login redirect.
+      var initial = ((u.name || 'S').trim().charAt(0) || 'S').toUpperCase();
+      return '<h1 class="page-title">🔐 Sign In</h1>' +
+        '<section class="card"><div class="acct-head">' +
+        '<span class="auth-avatar big" aria-hidden="true">' + esc(initial) + '</span>' +
+        '<div><h3 style="margin:0">' + esc(u.name) + '</h3>' +
+        '<p class="muted small" style="margin:2px 0 0">' + esc(u.email) + ' · ' +
+        '<span class="badge ' + (ROLE_BADGE[u.role] || 'badge-ok') + '">' + esc(ROLE_LABEL[u.role] || 'Student') + '</span></p></div></div>' +
+        '<p class="small muted">You are already signed in on this device.</p>' +
+        '<div class="btn-row"><a class="btn btn-primary" href="#/account">My account</a>' +
+        '<button class="btn btn-outline" data-v2action="auth-signout">Sign out</button></div></section>';
+    }
+    pendingNext = validNext(query && query.next);
+    syncAuthState();
+    var isSignup = loginState.tab === 'signup';
+    var tabs =
+      '<div class="tabs" role="tablist">' +
+      '<button type="button" class="tab' + (isSignup ? ' active' : '') + '" data-v3action="login-tab" data-tab="signup" role="tab" aria-selected="' + isSignup + '">Create account</button>' +
+      '<button type="button" class="tab' + (!isSignup ? ' active' : '') + '" data-v3action="login-tab" data-tab="signin" role="tab" aria-selected="' + (!isSignup) + '">Sign in</button>' +
+      '</div>';
+    var roles = '<div class="role-grid" role="radiogroup" aria-label="Choose your role">' +
+      LOGIN_ROLES.map(function (r) {
+        return '<button type="button" class="role-card' + (loginState.role === r.key ? ' selected' : '') + '"' +
+          ' data-v3action="login-role" data-role="' + r.key + '" aria-pressed="' + (loginState.role === r.key) + '">' +
+          '<span class="role-icon" aria-hidden="true">' + r.icon + '</span>' +
+          '<span class="role-label">' + r.label + '</span></button>';
+      }).join('') + '</div>';
+    return '<h1 class="page-title">🔐 ' + (isSignup ? 'Create your account' : 'Welcome back') + '</h1>' +
+      '<p class="page-sub">Join Shaheen Academy as a Student, Teacher, or Parent.</p>' +
+      '<section class="card">' + tabs +
+      '<form data-v2form="auth" novalidate style="margin-top:12px">' +
+      '<div role="radiogroup" aria-label="Choose your role">' + roles + '</div>' +
+      (isSignup
+        ? '<label class="v2-label" for="login-name">Full name</label>' +
+          '<input class="v2-input" id="login-name" name="name" type="text" maxlength="60" placeholder="e.g. Ali Raza" autocomplete="name">'
+        : '') +
+      '<label class="v2-label" for="login-email">Email</label>' +
+      '<input class="v2-input" id="login-email" name="email" type="email" maxlength="120" placeholder="you@example.com" autocomplete="email">' +
+      '<label class="v2-label" for="login-pass">Password</label>' +
+      '<input class="v2-input" id="login-pass" name="password" type="password" maxlength="72" placeholder="••••••••" autocomplete="' + (isSignup ? 'new-password' : 'current-password') + '">' +
+      '<div class="auth-error" id="auth-error" role="alert" hidden></div>' +
+      '<button class="btn btn-primary btn-block" type="submit" style="margin-top:14px">' + (isSignup ? 'Create account' : 'Sign in') + '</button>' +
+      '<p class="demo-note">Demo prototype — your details stay on this device.</p>' +
+      '</form></section>';
+  }
+
+  /* ---------------- 4. Blog ---------------- */
+  function vBlog(postId, query) {
+    if (postId) return vBlogPost(postId);
+    var cat = (query && query.cat) || '';
+    var cats = blogCats();
+    var posts = blogPosts().filter(function (p) { return !cat || p.category === cat; });
+    var h = '<h1 class="page-title">✍️ Blog</h1>' +
+      '<p class="page-sub">Exam guides, study science, and practical advice.</p>' +
+      '<div class="cat-row" role="navigation" aria-label="Filter by category">' +
+      '<a class="cat-chip' + (!cat ? ' active' : '') + '" href="#/blog">All</a>' +
+      cats.map(function (c) {
+        return '<a class="cat-chip' + (cat === c ? ' active' : '') + '" href="#/blog?cat=' + encodeURIComponent(c) + '">' + esc(c) + '</a>';
+      }).join('') + '</div>';
+    if (!posts.length) {
+      h += '<section class="card empty"><span class="big" aria-hidden="true">📭</span>' +
+        '<h2>No posts here yet</h2><p>Try another category.</p>' +
+        '<a class="btn btn-primary" href="#/blog">All posts</a></section>';
+      return h;
+    }
+    h += '<div class="blog-list">';
+    posts.forEach(function (p) {
+      h += '<a class="card-link" href="#/blog/' + esc(p.id) + '"><article class="card blog-card">' +
+        '<span class="badge badge-gold">' + esc(p.category || 'General') + '</span>' +
+        '<h3 class="blog-title">' + esc(p.title) + '</h3>' +
+        '<p class="blog-meta">' + esc(fmtPostDate(p.date)) + '</p>' +
+        '<p class="blog-excerpt">' + esc(p.excerpt) + '</p>' +
+        '<span class="blog-read">Read →</span>' +
+        '</article></a>';
+    });
+    return h + '</div>';
+  }
+
+  function vBlogPost(id) {
+    var p = findPost(id);
+    if (!p) {
+      return '<h1 class="page-title">✍️ Blog</h1>' +
+        '<section class="card empty"><span class="big" aria-hidden="true">🧭</span>' +
+        '<h2>Post not found</h2><p>This article does not exist.</p>' +
+        '<a class="btn btn-primary" href="#/blog">Back to blog</a></section>';
+    }
+    var related = blogPosts().filter(function (q) {
+      return q && q.id !== p.id && q.category === p.category;
+    }).slice(0, 3);
+    var h = '<div class="breadcrumb"><a href="#/home">Home</a> › <a href="#/blog">Blog</a> › ' + esc(p.category || 'General') + '</div>' +
+      '<article class="card post">' +
+      '<span class="badge badge-gold">' + esc(p.category || 'General') + '</span>' +
+      '<h1 class="post-title">' + esc(p.title) + '</h1>' +
+      '<p class="post-meta">' + esc(fmtPostDate(p.date)) + ' · Shaheen Academy</p>' +
+      '<p class="post-lede">' + esc(p.excerpt) + '</p>' +
+      '<div class="post-body">' + (p.html || '') + '</div>' +
+      '</article>' +
+      '<a class="btn btn-outline" href="#/blog">← All articles</a>';
+    if (related.length) {
+      h += '<h2>Related reading</h2><div class="blog-list">';
+      related.forEach(function (q) {
+        h += '<a class="card-link" href="#/blog/' + esc(q.id) + '"><article class="card blog-card">' +
+          '<span class="badge badge-gold">' + esc(q.category || 'General') + '</span>' +
+          '<h3 class="blog-title">' + esc(q.title) + '</h3>' +
+          '<p class="blog-excerpt">' + esc(q.excerpt) + '</p>' +
+          '<span class="blog-read">Read →</span></article></a>';
+      });
+      h += '</div>';
+    }
+    return h;
+  }
+
+  /* ---------------- home blog teaser (injected after engine render) ---------------- */
+  function injectBlogTeaser() {
+    if ($('blog-teaser')) return; // already injected for this render
+    var app = $('app');
+    if (!app) return;
+    var posts = blogPosts().slice(0, 2);
+    if (!posts.length) return;
+    var h = '<section class="card" id="blog-teaser" aria-label="From the blog">' +
+      '<div class="teaser-head"><h2 style="margin:0">✍️ From the blog</h2>' +
+      '<a class="small" href="#/blog">View all →</a></div>';
+    posts.forEach(function (p) {
+      h += '<a class="teaser-link" href="#/blog/' + esc(p.id) + '">' +
+        '<strong>' + esc(p.title) + '</strong>' +
+        '<span class="small muted">' + esc(p.category || '') + ' · ' + esc(fmtPostDate(p.date)) + '</span></a>';
+    });
+    app.insertAdjacentHTML('beforeend', h + '</section>');
+  }
+
+  /* ---------------- events (document-level; engine untouched) ---------------- */
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-v3action]');
+    if (!el) return;
+    var a = el.getAttribute('data-v3action');
+    if (a === 'login-tab') {
+      loginState.tab = (el.getAttribute('data-tab') === 'signin') ? 'signin' : 'signup';
+      syncAuthState();
+      rerender();
+    } else if (a === 'login-role') {
+      var r = el.getAttribute('data-role');
+      if (r === 'student' || r === 'teacher' || r === 'parent') loginState.role = r;
+      syncAuthState();
+      rerender();
+    }
+  });
+
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target.closest('[data-v3form]');
+    if (!form) return;
+    ev.preventDefault();
+    if (form.getAttribute('data-v3form') === 'contact') handleContact(form);
+  });
+
+  // Post-login redirect: after the shared auth handler signs the visitor
+  // in, it re-renders the current route; this listener (registered after
+  // the engine's) then sends them where they came from, if valid.
+  window.addEventListener('hashchange', function () {
+    var u = currentUser();
+    if (u && pendingNext) {
+      var dest = pendingNext;
+      pendingNext = null;
+      location.hash = dest;
+    }
+  });
+
+  window.__saV3 = {
+    vAbout: vAbout,
+    vContact: vContact,
+    vLogin: vLogin,
+    vBlog: vBlog,
+    afterRender: function (route) {
+      if (route === 'home' || !route) injectBlogTeaser();
+    }
+  };
 })();
