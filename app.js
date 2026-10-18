@@ -1092,6 +1092,7 @@
     else if (p[0] === 'contact')            html = (window.__saV3 && window.__saV3.vContact) ? window.__saV3.vContact() : vNotFound();
     else if (p[0] === 'login')              html = (window.__saV3 && window.__saV3.vLogin) ? window.__saV3.vLogin(r.query || {}) : vNotFound();
     else if (p[0] === 'blog')               html = (window.__saV3 && window.__saV3.vBlog) ? window.__saV3.vBlog(p[1] || null, r.query || {}) : vNotFound();
+    else if (p[0] === 'mocktest')           html = (window.__saMock && window.__saMock.vMock) ? window.__saMock.vMock(p, r.query || {}) : vNotFound();
     else                                    html = vNotFound();
 
     appEl.innerHTML = html;
@@ -1107,12 +1108,18 @@
     var links = document.querySelectorAll('.bottom-nav a');
     links.forEach(function (a) {
       var key = a.getAttribute('data-route');
-      var active = (key === route) || (key === 'home' && (route === 'track' || route === 'course' || route === 'chapter' || route === 'lesson' || route === 'quiz' || route === 'certificate'));
+      var active = (key === route) || (key === 'home' && (route === 'track' || route === 'course' || route === 'chapter' || route === 'lesson' || route === 'quiz' || route === 'certificate' || route === 'mocktest'));
       a.classList.toggle('active', !!active);
       if (active) a.setAttribute('aria-current', 'page');
       else a.removeAttribute('aria-current');
     });
   }
+
+  /* v4 bridge: lets the Mock Test module award XP / touch the streak
+     through the engine's own state, so XP stays unified. */
+  window.__saEngine = {
+    awardXP: function (n) { addXP(n); touchStreak(); save(); }
+  };
 
   /* ---------------- Shared fragments ---------------- */
   function emptyState(icon, title, text, linkHref, linkText) {
@@ -1155,6 +1162,13 @@
 
     var h = '<h1 class="greeting">' + esc(greeting()) + (state.name ? ', ' + esc(state.name) : '') + ' 👋</h1>';
     h += '<p class="greeting-sub">What will you learn today?</p>';
+
+    // Mock Test hero — flagship entry to timed practice exams.
+    h += '<a class="card card-link mock-hero" href="#/mocktest">' +
+      '<span class="mock-hero-icon" aria-hidden="true">📝</span>' +
+      '<span class="mock-hero-body"><span class="mock-hero-title">Mock Test</span>' +
+      '<span class="mock-hero-sub">Timed chapter-wise & full-subject practice exams</span></span>' +
+      '<span class="track-arrow" aria-hidden="true">›</span></a>';
 
     // Streak + level widgets
     h += '<div class="stat-grid">' +
@@ -2078,5 +2092,619 @@
     afterRender: function (route) {
       if (route === 'home' || !route) injectBlogTeaser();
     }
+  };
+})();
+/* ============================================================
+   Shaheen Academy — Mock Test module (v4)
+   Timed mock exams built from the REAL MCQ banks:
+     - Chapter-wise tests: one chapter's bank, mastered alone.
+     - Full Subject Mock: mixed questions across ALL chapters
+       of the subject in one sitting (exam simulation).
+   Complete subject preparation, chapter by chapter AND full
+   coursework, in one place.
+
+   Practice only — these are NOT official board/PMDC/UET/FPSC
+   exams. Pass marks shown are practice benchmarks.
+
+   Data: reads window.SHAHEEN_TRACKS (school + testprep tracks).
+   Storage: localStorage 'shaheen-mocks-v1' { best, attempts }.
+   XP flows through window.__saEngine.awardXP when present.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* ---------------- tiny helpers (self-contained) ---------------- */
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  function $(id) { return document.getElementById(id); }
+  function lsGet(k, fb) {
+    try { var r = localStorage.getItem(k); return r ? JSON.parse(r) : fb; } catch (e) { return fb; }
+  }
+  function lsSet(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ }
+  }
+  function shuffle(arr) {
+    arr = arr.slice();
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+    }
+    return arr;
+  }
+  function fmtClock(sec) {
+    sec = Math.max(0, sec | 0);
+    var m = Math.floor(sec / 60), s = sec % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+  function fmtDate(ts) {
+    try { return new Date(ts).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); }
+    catch (e) { return ''; }
+  }
+  function fmtDur(sec) {
+    sec = Math.max(0, Math.round(sec));
+    var m = Math.floor(sec / 60), s = sec % 60;
+    if (m <= 0) return s + 's';
+    return m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+  }
+  function rerender() {
+    try { window.dispatchEvent(new Event('hashchange')); } catch (e) {}
+  }
+
+  /* ---------------- config ---------------- */
+  var MOCK_KEY = 'shaheen-mocks-v1';
+  var TRACKS = ['school', 'testprep'];      // mock tests offered for these tracks
+  var PASS = { school: 50, testprep: 60 };  // practice benchmarks (%)
+  var XP_PER_CORRECT = 2, XP_PASS_BONUS = 25;
+
+  /* ---------------- data index ----------------
+     Built fresh on each hub visit from window.SHAHEEN_TRACKS, so it
+     always reflects the real chapters and question banks. Chapters
+     with no usable quiz bank (< 5 questions or comingSoon) are
+     excluded from the picker — never faked. */
+  function buildIndex() {
+    var T = window.SHAHEEN_TRACKS || {};
+    var out = { tracks: [], courses: {}, chapters: {} };
+    TRACKS.forEach(function (tk) {
+      var t = T[tk];
+      if (!t) return;
+      var m = t.meta || {};
+      var trackEntry = { id: tk, title: m.title || tk, icon: m.icon || '📚',
+                         tagline: m.tagline || '', courses: [] };
+      (t.courses || []).forEach(function (c) {
+        var chs = [];
+        (c.chapters || []).forEach(function (ch) {
+          if (ch.comingSoon || !ch.quiz || ch.quiz.length < 5) return;
+          chs.push({ id: ch.id, title: ch.title, urdu: ch.urdu, q: ch.quiz.length,
+                     courseId: c.id, track: tk, quiz: ch.quiz });
+        });
+        if (!chs.length) return; // course excluded: nothing testable yet
+        var total = chs.reduce(function (a, ch) { return a + ch.q; }, 0);
+        var courseEntry = { id: c.id, title: c.title, urdu: c.urdu, desc: c.desc,
+                            icon: c.icon || '📖', track: tk, trackTitle: trackEntry.title,
+                            chapters: chs, totalQ: total,
+                            classLabel: c.class || c.className || '' };
+        trackEntry.courses.push(courseEntry);
+        out.courses[c.id] = courseEntry;
+        chs.forEach(function (ch) { out.chapters[ch.id] = ch; });
+      });
+      out.tracks.push(trackEntry);
+    });
+    return out;
+  }
+
+  function trackQuestionTotal(idx, tk) {
+    var n = 0;
+    Object.keys(idx.courses).forEach(function (id) {
+      if (idx.courses[id].track === tk) n += idx.courses[id].totalQ;
+    });
+    return n;
+  }
+
+  /* ---------------- test specs ---------------- */
+  // spec: { track, courseId, mode: 'chapter'|'full', chapterId, n }
+  function chapterLengths(n) {
+    if (n <= 25) return [n];
+    return [20, 50, n];
+  }
+  function fullLengths(total) {
+    var opts = [25, 50, 100].filter(function (n) { return n <= total; });
+    if (!opts.length) return [total];
+    if (total <= 100 && opts.indexOf(total) < 0) opts.push(total);
+    return opts;
+  }
+  function testKey(s) {
+    return ['mock', s.track, s.courseId, s.mode, s.chapterId || 'all', 'n' + s.n].join('|');
+  }
+  function testName(idx, s) {
+    var c = idx.courses[s.courseId];
+    var cname = c ? ((c.classLabel ? c.classLabel + ' ' : '') + c.title) : s.courseId;
+    if (s.mode === 'chapter') {
+      var ch = idx.chapters[s.chapterId];
+      return cname + ' — ' + (ch ? ch.title : 'Chapter') + ' (' + s.n + ' Q)';
+    }
+    return cname + ' — Full Mock (' + s.n + ' Q)';
+  }
+
+  function finalize(q, chId, chTitle) {
+    var order = shuffle(q.options.map(function (_, i) { return i; }));
+    return {
+      q: q.q,
+      options: order.map(function (i) { return q.options[i]; }),
+      answer: order.indexOf(q.answer),
+      explain: q.explain || '',
+      chapterId: chId,
+      chapterTitle: chTitle
+    };
+  }
+
+  function buildQuestions(idx, spec) {
+    var c = idx.courses[spec.courseId];
+    if (!c) return null;
+    var pool = [];
+    if (spec.mode === 'chapter') {
+      var ch = idx.chapters[spec.chapterId];
+      if (!ch || ch.courseId !== spec.courseId) return null;
+      ch.quiz.forEach(function (q) { pool.push({ raw: q, chId: ch.id, chTitle: ch.title }); });
+    } else {
+      c.chapters.forEach(function (ch) {
+        ch.quiz.forEach(function (q) { pool.push({ raw: q, chId: ch.id, chTitle: ch.title }); });
+      });
+    }
+    // Dedupe identical questions (same stem AND same options) before
+    // shuffling — the same bank is sometimes reused across chapters,
+    // while generic stems with different options are distinct questions.
+    var seen = {}, uniq = [];
+    pool.forEach(function (it) {
+      var dk = it.raw.q + '‖' + it.raw.options.join('‖');
+      if (!seen[dk]) { seen[dk] = 1; uniq.push(it); }
+    });
+    return shuffle(uniq).slice(0, Math.min(spec.n, uniq.length)).map(function (it) {
+      return finalize(it.raw, it.chId, it.chTitle);
+    });
+  }
+
+  /* ---------------- session + timer ---------------- */
+  var session = null;
+  var timerId = null;
+
+  function stopTimer() {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+  }
+
+  function startSession(idx, spec) {
+    var questions = buildQuestions(idx, spec);
+    if (!questions || questions.length < 5) return null;
+    stopTimer();
+    session = {
+      spec: spec,
+      key: testKey(spec),
+      name: testName(idx, spec),
+      questions: questions,
+      picks: questions.map(function () { return null; }),
+      idx: 0,
+      totalSecs: questions.length * 60,
+      leftSecs: questions.length * 60,
+      armed: false,
+      done: false,
+      result: null,
+      showReview: false
+    };
+    timerId = setInterval(tick, 1000);
+    return session;
+  }
+
+  function tick() {
+    if (!session || session.done) { stopTimer(); return; }
+    session.leftSecs -= 1;
+    var el = $('mock-timer');
+    if (el) {
+      el.textContent = '⏱ ' + fmtClock(session.leftSecs);
+      if (session.leftSecs <= 60) el.classList.add('timer-danger');
+    }
+    var w = $('mock-warn');
+    if (w && session.leftSecs <= 60) w.hidden = false;
+    if (session.leftSecs <= 0) submitTest(true);
+  }
+
+  // Leaving the run route kills the timer (refresh-safe: session is in-memory).
+  window.addEventListener('hashchange', function () {
+    var h = location.hash || '';
+    if (h.indexOf('#/mocktest/run') !== 0) stopTimer();
+  });
+
+  /* ---------------- storage ---------------- */
+  function mockStore() {
+    var s = lsGet(MOCK_KEY, null);
+    if (!s || typeof s !== 'object') s = { best: {}, attempts: [] };
+    if (!s.best || typeof s.best !== 'object') s.best = {};
+    if (!Array.isArray(s.attempts)) s.attempts = [];
+    return s;
+  }
+
+  /* ---------------- submit + results ---------------- */
+  function submitTest(auto) {
+    if (!session || session.done) return;
+    stopTimer();
+    var qs = session.questions;
+    var correct = 0, wrong = 0, skipped = 0;
+    var perCh = {};
+    qs.forEach(function (q, i) {
+      var pk = session.picks[i];
+      var ch = perCh[q.chapterId] || (perCh[q.chapterId] = { title: q.chapterTitle, correct: 0, total: 0 });
+      ch.total += 1;
+      if (pk === null) skipped += 1;
+      else if (pk === q.answer) { correct += 1; ch.correct += 1; }
+      else wrong += 1;
+    });
+    var total = qs.length;
+    var pct = total ? Math.round(correct / total * 100) : 0;
+    var passMark = PASS[session.spec.track] || 50;
+    var pass = pct >= passMark;
+    var secs = session.totalSecs - Math.max(0, session.leftSecs);
+    var xp = correct * XP_PER_CORRECT + (pass ? XP_PASS_BONUS : 0);
+    try { if (window.__saEngine && window.__saEngine.awardXP) window.__saEngine.awardXP(xp); } catch (e) {}
+    var st = mockStore();
+    var prev = st.best[session.key];
+    var isNewBest = (prev === undefined || pct > prev);
+    if (isNewBest) st.best[session.key] = pct;
+    st.attempts.unshift({ key: session.key, name: session.name, correct: correct,
+                          total: total, pct: pct, pass: pass, secs: secs, date: Date.now() });
+    st.attempts = st.attempts.slice(0, 30);
+    lsSet(MOCK_KEY, st);
+    session.done = true;
+    session.result = { correct: correct, wrong: wrong, skipped: skipped, total: total,
+                       pct: pct, pass: pass, passMark: passMark, secs: secs, xp: xp,
+                       perCh: perCh, auto: !!auto, best: st.best[session.key],
+                       isNewBest: isNewBest };
+    location.hash = '#/mocktest/result';
+  }
+
+  /* ---------------- shared fragments ---------------- */
+  function breadcrumb(items) {
+    return '<div class="breadcrumb">' + items.map(function (it, i) {
+      var sep = i ? ' › ' : '';
+      return sep + (it.href ? '<a href="' + esc(it.href) + '">' + esc(it.label) + '</a>' : esc(it.label));
+    }).join('') + '</div>';
+  }
+
+  function bestBadge(key) {
+    var st = mockStore();
+    var b = st.best[key];
+    return (b !== undefined) ? ' <span class="badge badge-gold">best ' + b + '%</span>' : '';
+  }
+
+  /* ---------------- views ---------------- */
+  function vMock(parts, query) {
+    var idx = buildIndex();
+    var a = parts[1], b = parts[2], c = parts[3];
+    if (!a) return vHub(idx);
+    if (a === 'run') return vRun(idx, query || {});
+    if (a === 'result') return vResult(idx);
+    var tk = (a === 'school' || a === 'testprep') ? a : null;
+    if (!tk) return vHub(idx);
+    if (!b) return vCourses(idx, tk);
+    if (!idx.courses[b] || idx.courses[b].track !== tk) return vCourses(idx, tk);
+    if (!c) return vModes(idx, tk, b);
+    return vChapterLengths(idx, tk, b, c);
+  }
+
+  function vHub(idx) {
+    var h = '<h1 class="page-title">📝 Mock Test</h1>';
+    h += '<p class="page-sub">Timed practice exams from the real question banks — chapter by chapter, or the full subject in one sitting. <span class="muted">Practice only, not an official exam.</span></p>';
+
+    idx.tracks.forEach(function (t) {
+      var nCourses = t.courses.length;
+      var nQ = trackQuestionTotal(idx, t.id);
+      h += '<a class="card card-link" href="#/mocktest/' + esc(t.id) + '">' +
+        '<div class="track-card"><span class="track-icon" aria-hidden="true">' + esc(t.icon) + '</span>' +
+        '<div class="track-body"><h3>' + esc(t.title) + ' Mock Tests</h3>' +
+        '<p class="track-tagline">' + esc(t.tagline) + ' · ' + nCourses + ' subjects · ' + nQ + ' questions</p></div>' +
+        '<span class="track-arrow" aria-hidden="true">›</span></div></a>';
+    });
+
+    // My Mock Tests — past attempts
+    var st = mockStore();
+    h += '<h2 class="mt">My Mock Tests</h2>';
+    if (!st.attempts.length) {
+      h += '<section class="card empty"><span class="big" aria-hidden="true">🗂️</span>' +
+        '<h3>No attempts yet</h3><p class="muted">Your mock test history will appear here.</p></section>';
+    } else {
+      h += '<section class="card" style="padding:6px 18px">';
+      st.attempts.slice(0, 10).forEach(function (at) {
+        h += '<div class="list-item"><span class="li-icon" aria-hidden="true">' +
+          (at.pass ? '✅' : '📝') + '</span>' +
+          '<div class="li-body"><p class="li-title">' + esc(at.name) + '</p>' +
+          '<p class="li-sub">' + fmtDate(at.date) + ' · ' + fmtDur(at.secs) + ' · ' + at.correct + '/' + at.total + '</p></div>' +
+          '<span class="badge ' + (at.pass ? 'badge-ok' : 'badge-soon') + '">' + at.pct + '%</span></div>';
+      });
+      h += '</section>';
+      if (st.attempts.length > 10) h += '<p class="muted small">Showing the latest 10 of ' + st.attempts.length + ' attempts.</p>';
+    }
+    return h;
+  }
+
+  function vCourses(idx, tk) {
+    var t = null;
+    idx.tracks.forEach(function (x) { if (x.id === tk) t = x; });
+    if (!t) return vHub(idx);
+    var h = breadcrumb([{ label: 'Home', href: '#/home' }, { label: 'Mock Test', href: '#/mocktest' }, { label: t.title }]);
+    h += '<h1 class="page-title">' + esc(t.icon) + ' ' + esc(t.title) + ' Mock Tests</h1>';
+    h += '<p class="page-sub">Pick a subject, then choose a chapter-wise test or a full-subject mock.</p>';
+    if (!t.courses.length) {
+      h += '<section class="card empty"><span class="big" aria-hidden="true">📭</span><h3>No testable subjects yet</h3>' +
+        '<p class="muted">Question banks for this track are being written.</p></section>';
+      return h;
+    }
+    t.courses.forEach(function (c) {
+      h += '<a class="card card-link" href="#/mocktest/' + esc(tk) + '/' + esc(c.id) + '">' +
+        '<div class="track-card"><span class="track-icon" aria-hidden="true">' + esc(c.icon) + '</span>' +
+        '<div class="track-body"><h3>' + esc((c.classLabel ? c.classLabel + ' ' : '') + c.title) + '</h3>' +
+        '<p class="track-tagline">' + c.chapters.length + ' chapters · ' + c.totalQ + ' questions</p></div>' +
+        '<span class="track-arrow" aria-hidden="true">›</span></div></a>';
+    });
+    return h;
+  }
+
+  function vModes(idx, tk, courseId) {
+    var c = idx.courses[courseId];
+    var h = breadcrumb([{ label: 'Home', href: '#/home' }, { label: 'Mock Test', href: '#/mocktest' },
+                        { label: c.trackTitle, href: '#/mocktest/' + esc(tk) }, { label: c.title }]);
+    h += '<h1 class="page-title">' + esc(c.icon) + ' ' + esc((c.classLabel ? c.classLabel + ' ' : '') + c.title) + '</h1>';
+    h += '<p class="page-sub">Two ways to prepare — master chapters one by one, then prove it with a full mock. <span class="muted">1 minute per question · auto-submit at time-up.</span></p>';
+
+    // Mode A — chapter-wise
+    h += '<h2>📖 Chapter-wise tests</h2>';
+    h += '<section class="card" style="padding:6px 18px">';
+    c.chapters.forEach(function (ch) {
+      var lens = chapterLengths(ch.q);
+      var href = lens.length === 1
+        ? '#/mocktest/run?track=' + encodeURIComponent(tk) + '&course=' + encodeURIComponent(courseId) +
+          '&mode=chapter&chapter=' + encodeURIComponent(ch.id) + '&n=' + lens[0]
+        : '#/mocktest/' + esc(tk) + '/' + esc(courseId) + '/' + esc(ch.id);
+      h += '<a class="list-item" href="' + href + '">' +
+        '<span class="li-icon" aria-hidden="true">📄</span>' +
+        '<div class="li-body"><p class="li-title">' + esc(ch.title) +
+        bestBadge(testKey({ track: tk, courseId: courseId, mode: 'chapter', chapterId: ch.id, n: lens[0] })) + '</p>' +
+        '<p class="li-sub">' + ch.q + ' questions' + (lens.length > 1 ? ' · choose length' : '') + '</p></div>' +
+        '<span class="li-meta" aria-hidden="true">›</span></a>';
+    });
+    h += '</section>';
+
+    // Mode B — full subject mock
+    h += '<h2 class="mt">🏁 Full Subject Mock</h2>';
+    h += '<p class="muted small">All ' + c.chapters.length + ' chapters mixed in one sitting — the real exam feeling.</p>';
+    h += '<section class="card"><div class="btn-row" style="margin-top:0">';
+    fullLengths(c.totalQ).forEach(function (n) {
+      var label = (n === c.totalQ && c.totalQ > 100) ? n + ' Q' : (n === c.totalQ ? 'Full (' + n + ' Q)' : n + ' Q');
+      if (n === c.totalQ && n <= 100) label = 'Full (' + n + ' Q)';
+      h += '<a class="btn btn-primary" href="#/mocktest/run?track=' + encodeURIComponent(tk) +
+        '&course=' + encodeURIComponent(courseId) + '&mode=full&n=' + n + '">' + esc(label) +
+        bestBadge(testKey({ track: tk, courseId: courseId, mode: 'full', chapterId: null, n: n })) + '</a>';
+    });
+    h += '</div></section>';
+    return h;
+  }
+
+  function vChapterLengths(idx, tk, courseId, chapterId) {
+    var c = idx.courses[courseId];
+    var ch = idx.chapters[chapterId];
+    if (!ch || ch.courseId !== courseId) return vModes(idx, tk, courseId);
+    var h = breadcrumb([{ label: 'Home', href: '#/home' }, { label: 'Mock Test', href: '#/mocktest' },
+                        { label: c.title, href: '#/mocktest/' + esc(tk) + '/' + esc(courseId) }, { label: ch.title }]);
+    h += '<h1 class="page-title">📖 ' + esc(ch.title) + '</h1>';
+    h += '<p class="page-sub">How many questions? <span class="muted">1 minute each.</span></p>';
+    h += '<section class="card"><div class="btn-row" style="margin-top:0">';
+    chapterLengths(ch.q).forEach(function (n) {
+      var label = (n === ch.q) ? 'All (' + n + ' Q)' : n + ' Q';
+      h += '<a class="btn btn-primary" href="#/mocktest/run?track=' + encodeURIComponent(tk) +
+        '&course=' + encodeURIComponent(courseId) + '&mode=chapter&chapter=' + encodeURIComponent(chapterId) +
+        '&n=' + n + '">' + esc(label) +
+        bestBadge(testKey({ track: tk, courseId: courseId, mode: 'chapter', chapterId: chapterId, n: n })) + '</a>';
+    });
+    h += '</div></section>';
+    return h;
+  }
+
+  function parseSpec(query) {
+    var spec = {
+      track: query.track || '',
+      courseId: query.course || '',
+      mode: query.mode === 'full' ? 'full' : 'chapter',
+      chapterId: query.chapter || null,
+      n: parseInt(query.n, 10) || 0
+    };
+    return spec;
+  }
+
+  function vRun(idx, query) {
+    var spec = parseSpec(query);
+    var key = testKey(spec);
+    if (!session || session.done || session.key !== key) {
+      var s = startSession(idx, spec);
+      if (!s) {
+        return breadcrumb([{ label: 'Home', href: '#/home' }, { label: 'Mock Test', href: '#/mocktest' }]) +
+          '<section class="card empty"><span class="big" aria-hidden="true">❓</span>' +
+          '<h2>Could not start this test</h2><p class="muted">The question bank for this test is not available.</p>' +
+          '<a class="btn btn-primary" href="#/mocktest">Back to Mock Tests</a></section>';
+      }
+    }
+    var sc = session;
+    var q = sc.questions[sc.idx];
+    var total = sc.questions.length;
+    var answered = sc.picks.filter(function (p) { return p !== null; }).length;
+
+    var h = breadcrumb([{ label: 'Mock Test', href: '#/mocktest' }, { label: sc.name }]);
+    h += '<div class="timer-bar"><span id="mock-timer" class="mock-timer' +
+      (sc.leftSecs <= 60 ? ' timer-danger' : '') + '">⏱ ' + fmtClock(sc.leftSecs) + '</span>' +
+      '<span class="muted small">' + answered + '/' + total + ' answered</span></div>';
+    h += '<div id="mock-warn" class="mock-warn" ' + (sc.leftSecs <= 60 ? '' : 'hidden') + '>⏰ 1 minute left — the test auto-submits at zero!</div>';
+
+    // Question palette
+    h += '<details class="palette"><summary>🔢 Question palette (' + answered + '/' + total + ')</summary><div class="palette-grid">';
+    for (var i = 0; i < total; i++) {
+      var cls = 'pal-btn' + (i === sc.idx ? ' cur' : '') + (sc.picks[i] !== null ? ' ans' : '');
+      h += '<button class="' + cls + '" data-mock="goto" data-i="' + i + '">' + (i + 1) + '</button>';
+    }
+    h += '</div></details>';
+
+    h += '<div class="quiz-progress"><div class="quiz-qcount">Question ' + (sc.idx + 1) + ' of ' + total +
+      ' · <span class="muted">' + esc(q.chapterTitle) + '</span></div>' +
+      '<div class="pbar" role="progressbar" aria-valuenow="' + Math.round(sc.idx / total * 100) +
+      '" aria-valuemin="0" aria-valuemax="100"><span style="width:' + Math.round(sc.idx / total * 100) + '%"></span></div></div>';
+
+    h += '<section class="card"><p class="quiz-question">' + esc(q.q) + '</p><div class="quiz-options">';
+    var keys = ['A', 'B', 'C', 'D', 'E', 'F'];
+    q.options.forEach(function (opt, oi) {
+      var sel = sc.picks[sc.idx] === oi ? ' picked' : '';
+      h += '<button class="quiz-option' + sel + '" data-mock="pick" data-i="' + oi + '">' +
+        '<span class="opt-key">' + (keys[oi] || (oi + 1)) + '</span><span>' + esc(opt) + '</span></button>';
+    });
+    h += '</div></section>';
+
+    h += '<div class="btn-row">' +
+      '<button class="btn btn-outline" data-mock="prev"' + (sc.idx === 0 ? ' disabled' : '') + '>‹ Prev</button>' +
+      (sc.idx + 1 < total
+        ? '<button class="btn btn-primary" data-mock="next">Next ›</button>'
+        : '<button class="btn btn-gold" data-mock="finish">' + (sc.armed ? '⚠️ Tap again to submit' : 'Finish test') + '</button>') +
+      '</div>';
+    if (sc.idx + 1 >= total) {
+      h += '<p class="muted small" style="text-align:center">On the last question — you can also finish early any time.</p>';
+    } else {
+      h += '<div style="text-align:center;margin-top:10px"><button class="btn btn-outline btn-sm" data-mock="finish">' +
+        (sc.armed ? '⚠️ Tap again to submit' : 'Finish early') + '</button></div>';
+    }
+    h += '<p class="muted small" style="text-align:center">Skipped questions count as wrong. Practice benchmark: ' +
+      (PASS[sc.spec.track] || 50) + '% to pass.</p>';
+    return h;
+  }
+
+  function vResult(idx) {
+    if (!session || !session.done || !session.result) {
+      location.hash = '#/mocktest';
+      return '';
+    }
+    var r = session.result;
+    var sc = session;
+    var h = breadcrumb([{ label: 'Mock Test', href: '#/mocktest' }, { label: 'Results' }]);
+    h += '<section class="card quiz-result">';
+    h += '<h1 class="page-title">' + (r.auto ? '⏰ Time up!' : 'Mock complete!') + '</h1>';
+    h += '<div class="quiz-score-ring" style="--pct:' + r.pct + '%"><span>' + r.pct + '%</span></div>';
+    h += '<p><strong>' + r.correct + ' / ' + r.total + '</strong> correct' +
+      (r.pass ? ' — <span class="badge badge-ok">PASSED 🎉</span>' : ' — <span class="badge badge-soon">not passed</span>') + '</p>';
+    h += '<p class="muted small">Practice benchmark: ' + r.passMark + '% · ' + (r.isNewBest ? 'new best score! 🏆' : 'best: ' + r.best + '%') + '</p>';
+
+    h += '<div class="mock-stats">' +
+      '<div class="mock-stat"><div class="mock-stat-num ok">' + r.correct + '</div><div class="mock-stat-label">correct</div></div>' +
+      '<div class="mock-stat"><div class="mock-stat-num bad">' + r.wrong + '</div><div class="mock-stat-label">wrong</div></div>' +
+      '<div class="mock-stat"><div class="mock-stat-num">' + r.skipped + '</div><div class="mock-stat-label">skipped</div></div>' +
+      '<div class="mock-stat"><div class="mock-stat-num">' + fmtDur(r.secs) + '</div><div class="mock-stat-label">time taken</div></div>' +
+      '</div>';
+    h += '<p class="muted small">+' + r.xp + ' XP earned' + (r.pass ? ' (includes ' + XP_PASS_BONUS + ' pass bonus)' : '') + '</p>';
+
+    // Per-chapter breakdown — the "complete preparation" feedback loop.
+    h += '<h3 class="mt">📊 Chapter breakdown</h3>';
+    var chIds = Object.keys(r.perCh).sort(function (a, b) {
+      var pa = r.perCh[a].correct / r.perCh[a].total, pb = r.perCh[b].correct / r.perCh[b].total;
+      return pa - pb;
+    });
+    chIds.forEach(function (cid) {
+      var ch = r.perCh[cid];
+      var cpct = Math.round(ch.correct / ch.total * 100);
+      h += '<div class="ch-row"><div class="ch-row-head"><span>' + esc(ch.title) + '</span>' +
+        '<span class="muted small">' + ch.correct + '/' + ch.total + ' · ' + cpct + '%</span></div>' +
+        '<div class="pbar" role="progressbar" aria-valuenow="' + cpct + '" aria-valuemin="0" aria-valuemax="100" aria-label="' + esc(ch.title) + '">' +
+        '<span style="width:' + cpct + '%"></span></div>' +
+        (cpct < r.passMark ? '<a class="small" href="#/chapter/' + esc(cid) + '">📖 Revise this chapter ›</a>' : '') +
+        '</div>';
+    });
+
+    h += '<div class="btn-row">' +
+      '<button class="btn btn-outline" data-mock="toggle-review">' + (sc.showReview ? 'Hide' : 'Show') + ' answer review</button>' +
+      '<button class="btn btn-outline" data-mock="retake">↻ Retake</button>' +
+      '<a class="btn btn-primary" href="#/mocktest">More mock tests</a></div>';
+
+    if (sc.showReview) {
+      h += '<h3 class="mt">📝 Answer review</h3>';
+      sc.questions.forEach(function (q, i) {
+        var pk = sc.picks[i];
+        var keys = ['A', 'B', 'C', 'D', 'E', 'F'];
+        h += '<section class="card review-item"><p class="quiz-question">' + (i + 1) + '. ' + esc(q.q) + '</p>';
+        h += '<p class="muted small">Chapter: ' + esc(q.chapterTitle) + '</p><div class="quiz-options">';
+        q.options.forEach(function (opt, oi) {
+          var cls = 'quiz-option locked';
+          if (oi === q.answer) cls += ' correct';
+          else if (oi === pk) cls += ' wrong';
+          else cls += ' dim';
+          h += '<div class="' + cls + '"><span class="opt-key">' + (keys[oi] || (oi + 1)) + '</span><span>' + esc(opt) + '</span></div>';
+        });
+        h += '</div><p class="small">' + (pk === null ? '⚪ <strong>Skipped.</strong> ' : (pk === q.answer ? '✅ <strong>You were right.</strong> ' : '❌ <strong>You chose ' + esc(keys[pk] || '?') + '.</strong> ')) +
+          'Correct: <strong>' + esc(keys[q.answer] || '?') + '</strong>.' +
+          (q.explain ? '<br><span class="muted">' + esc(q.explain) + '</span>' : '') + '</p></section>';
+      });
+    }
+    h += '</section>';
+    return h;
+  }
+
+  /* ---------------- actions ---------------- */
+  document.addEventListener('click', function (ev) {
+    var el = ev.target.closest('[data-mock]');
+    if (!el) return;
+    var a = el.getAttribute('data-mock');
+    if (!session || session.done) return;
+
+    if (a === 'pick') {
+      var pi = parseInt(el.getAttribute('data-i'), 10);
+      var q = session.questions[session.idx];
+      if (!isNaN(pi) && q && pi >= 0 && pi < q.options.length) {
+        session.picks[session.idx] = pi;
+        session.armed = false;
+        rerender();
+      }
+    }
+    else if (a === 'goto') {
+      var gi = parseInt(el.getAttribute('data-i'), 10);
+      if (!isNaN(gi) && gi >= 0 && gi < session.questions.length) {
+        session.idx = gi;
+        session.armed = false;
+        rerender();
+      }
+    }
+    else if (a === 'prev') {
+      if (session.idx > 0) { session.idx -= 1; session.armed = false; rerender(); }
+    }
+    else if (a === 'next') {
+      if (session.idx + 1 < session.questions.length) { session.idx += 1; session.armed = false; rerender(); }
+    }
+    else if (a === 'finish') {
+      if (!session.armed) { session.armed = true; rerender(); }
+      else submitTest(false);
+    }
+    else if (a === 'toggle-review') {
+      session.showReview = !session.showReview;
+      rerender();
+    }
+    else if (a === 'retake') {
+      var spec = session.spec;
+      stopTimer();
+      session = null;
+      location.hash = '#/mocktest/run?track=' + encodeURIComponent(spec.track) +
+        '&course=' + encodeURIComponent(spec.courseId) + '&mode=' + spec.mode +
+        (spec.chapterId ? '&chapter=' + encodeURIComponent(spec.chapterId) : '') + '&n=' + spec.n;
+    }
+  });
+
+  /* ---------------- public API ---------------- */
+  window.__saMock = {
+    vMock: vMock,
+    // exposed for the validation harness (harmless in production)
+    _buildIndex: buildIndex,
+    _buildQuestions: buildQuestions,
+    _fullLengths: fullLengths,
+    _chapterLengths: chapterLengths,
+    _testKey: testKey
   };
 })();
