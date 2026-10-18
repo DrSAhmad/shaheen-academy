@@ -182,6 +182,17 @@ a { color: var(--emerald); }
 .badge-soon { background: var(--line); color: var(--muted); }
 .badge-gold { background: var(--gold-light); color: var(--gold-dark); }
 .badge-ok { background: var(--ok-soft); color: var(--ok); }
+.badge-board { background: var(--emerald-soft); color: var(--emerald-deep); }
+
+/* Board picker (school track): horizontally scrollable chips, reuses .cat-chip */
+.board-row {
+  display: flex; gap: 8px; overflow-x: auto;
+  padding: 4px 2px 10px; margin: 2px -2px 0;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.board-row::-webkit-scrollbar { display: none; }
+.board-row .cat-chip { flex: 0 0 auto; }
+.board-count { margin: 0 0 12px; }
 
 /* ---------- 5. Home widgets ---------- */
 .greeting { font-size: 1.35rem; margin-bottom: 2px; }

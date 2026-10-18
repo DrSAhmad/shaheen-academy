@@ -4,7 +4,7 @@
    app.js, or any data/icon/manifest file changes, so users get
    the fresh version. Old caches are deleted on activate.
    ============================================================ */
-var CACHE = 'shaheen-v5';
+var CACHE = 'shaheen-v6';
 
 var PRECACHE = [
   './',
@@ -16,6 +16,12 @@ var PRECACHE = [
   './data/school.js',
   './data/school10.js',
   './data/school-other.js',
+  './data/school-federal.js',
+  './data/school-sindh.js',
+  './data/school-kp.js',
+  './data/school-balochistan.js',
+  './data/school-cambridge-ol.js',
+  './data/school-cambridge-al.js',
   './data/testprep.js',
   './data/skills.js',
   './data/blog.js',

@@ -1078,7 +1078,7 @@
     var html = '';
 
     if (p[0] === 'home')                    html = vHome();
-    else if (p[0] === 'track')              html = vTrack(p[1]);
+    else if (p[0] === 'track')              html = vTrack(p[1], p[2]);
     else if (p[0] === 'course')             html = vCourse(p[1]);
     else if (p[0] === 'chapter')            html = vChapter(p[1]);
     else if (p[0] === 'lesson')             html = vLesson(p[1]);
@@ -1224,15 +1224,55 @@
     return h;
   }
 
-  function vTrack(tk) {
+  /* ---------------- Multi-board support (school track) ----------------
+     New board data files register courses with a `board` field
+     ('federal','sindh','kp','balochistan','olevel','alevel').
+     Older Punjab courses carry no board field: undefined means 'punjab'. */
+  var BOARDS = [
+    ['punjab', 'Punjab'], ['federal', 'Federal'], ['sindh', 'Sindh'],
+    ['kp', 'KP'], ['balochistan', 'Balochistan'],
+    ['olevel', 'O Level'], ['alevel', 'A Level']
+  ];
+  function isBoard(b) {
+    for (var i = 0; i < BOARDS.length; i++) if (BOARDS[i][0] === b) return true;
+    return false;
+  }
+  function boardLabel(b) {
+    for (var i = 0; i < BOARDS.length; i++) if (BOARDS[i][0] === b) return BOARDS[i][1];
+    return 'Punjab';
+  }
+  function boardOf(c) { return (c && c.board) || 'punjab'; }
+
+  function vTrack(tk, boardSel) {
     var t = R.tracks[tk];
     if (!t) return emptyState('🧭', 'Track not found', 'This learning track does not exist.', '#/home', 'Back home');
     var m = trackMeta(tk);
     var courses = t.courses || [];
+    var activeBoard = null;
+    if (tk === 'school') {
+      var stored = null;
+      try { stored = localStorage.getItem('shaheen-board'); } catch (e) {}
+      activeBoard = (isBoard(boardSel) ? boardSel : null) ||
+                    (isBoard(stored) ? stored : null) || 'punjab';
+      try { localStorage.setItem('shaheen-board', activeBoard); } catch (e) {}
+    }
     var h = '<div class="breadcrumb"><a href="#/home">Home</a> › ' + esc(m.title) + '</div>';
     h += '<h1 class="page-title">' + esc(m.icon) + ' ' + esc(m.title) + '</h1>';
     if (m.urdu) h += '<p class="ur page-sub">' + esc(m.urdu) + '</p>';
     if (m.tagline) h += '<p class="page-sub">' + esc(m.tagline) + '</p>';
+
+    if (tk === 'school') {
+      // Board picker — horizontally scrollable chips, mobile-first.
+      h += '<div class="board-row" role="tablist" aria-label="Choose board">';
+      BOARDS.forEach(function (b) {
+        h += '<a class="cat-chip' + (b[0] === activeBoard ? ' active' : '') +
+          '" href="#/track/school/' + b[0] + '"' +
+          (b[0] === activeBoard ? ' aria-current="true"' : '') + '>' + esc(b[1]) + '</a>';
+      });
+      h += '</div>';
+      courses = courses.filter(function (c) { return boardOf(c) === activeBoard; });
+      h += '<p class="small muted board-count">' + courses.length + ' courses · ' + esc(boardLabel(activeBoard)) + '</p>';
+    }
 
     if (!courses.length) {
       h += emptyState('📚', 'No courses yet', 'Courses for this track are being prepared. Check back soon!', '#/home', 'Back home');
@@ -1244,6 +1284,7 @@
       h += '<a class="card card-link" href="#/course/' + esc(c.id) + '">' +
         '<div class="track-card"><span class="track-icon" aria-hidden="true">' + esc(c.icon || '📖') + '</span>' +
         '<div class="track-body"><h3>' + esc(c.title || 'Untitled course') + '</h3>' +
+        (tk === 'school' ? '<p style="margin:2px 0 6px"><span class="badge badge-board">' + esc(boardLabel(boardOf(c))) + '</span></p>' : '') +
         (c.urdu ? '<p class="ur" style="margin:0 0 4px">' + esc(c.urdu) + '</p>' : '') +
         (c.desc ? '<p class="track-tagline">' + esc(c.desc) + '</p>' : '') +
         pbar(pr.pct, pr.pct + '% complete') +
@@ -1265,6 +1306,7 @@
     h += '<h1 class="page-title">' + esc(c.icon || '📖') + ' ' + esc(c.title || 'Untitled course') + '</h1>';
     if (c.urdu) h += '<p class="ur page-sub">' + esc(c.urdu) + '</p>';
     if (c.desc) h += '<p class="page-sub">' + esc(c.desc) + '</p>';
+    if (e.track === 'school') h += '<p class="page-sub"><span class="badge badge-board">' + esc(boardLabel(boardOf(c))) + '</span></p>';
     h += '<section class="card">' + pbar(pr.pct, pr.done + ' of ' + pr.items + ' items complete (' + pr.pct + '%)') + '</section>';
 
     var el = courseEligibility(c);
@@ -1812,7 +1854,7 @@
 
       '<section class="card"><h2 style="margin-top:0">What you’ll find here</h2>' +
       '<div class="about-tracks">' +
-        '<a class="card-link" href="#/track/school"><div class="card about-mini"><span class="big" aria-hidden="true">🏫</span><h3>School</h3><p class="small muted">Complete Class 1–12 curriculum on the Punjab Board syllabus — lessons and quizzes chapter by chapter.</p></div></a>' +
+        '<a class="card-link" href="#/track/school"><div class="card about-mini"><span class="big" aria-hidden="true">🏫</span><h3>School</h3><p class="small muted">Complete Class 1–12 curriculum — Punjab, Federal, Sindh, KP and Balochistan boards plus Cambridge O & A Level — lessons and quizzes chapter by chapter.</p></div></a>' +
         '<a class="card-link" href="#/track/testprep"><div class="card about-mini"><span class="big" aria-hidden="true">🎯</span><h3>Test Prep</h3><p class="small muted">MDCAT, ECAT, and CSS — MCQ banks with explanations, revision notes, and exam strategy.</p></div></a>' +
         '<a class="card-link" href="#/track/skills"><div class="card about-mini"><span class="big" aria-hidden="true">💼</span><h3>Skills</h3><p class="small muted">Web development, Python, freelancing, and digital marketing — practical skills for earning.</p></div></a>' +
       '</div>' +
@@ -2164,6 +2206,13 @@
      always reflects the real chapters and question banks. Chapters
      with no usable quiz bank (< 5 questions or comingSoon) are
      excluded from the picker — never faked. */
+  /* Multi-board: mock courses carry c.board ('federal','sindh','kp',
+     'balochistan','olevel','alevel'); undefined means 'punjab'. */
+  var BOARD_LABELS = { punjab: 'Punjab', federal: 'Federal', sindh: 'Sindh',
+                       kp: 'KP', balochistan: 'Balochistan',
+                       olevel: 'O Level', alevel: 'A Level' };
+  function mockBoardLabel(b) { return BOARD_LABELS[b] || 'Punjab'; }
+
   function buildIndex() {
     var T = window.SHAHEEN_TRACKS || {};
     var out = { tracks: [], courses: {}, chapters: {} };
@@ -2184,7 +2233,7 @@
         var total = chs.reduce(function (a, ch) { return a + ch.q; }, 0);
         var courseEntry = { id: c.id, title: c.title, urdu: c.urdu, desc: c.desc,
                             icon: c.icon || '📖', track: tk, trackTitle: trackEntry.title,
-                            chapters: chs, totalQ: total,
+                            chapters: chs, totalQ: total, board: c.board || 'punjab',
                             classLabel: c.class || c.className || '' };
         trackEntry.courses.push(courseEntry);
         out.courses[c.id] = courseEntry;
@@ -2441,7 +2490,8 @@
     t.courses.forEach(function (c) {
       h += '<a class="card card-link" href="#/mocktest/' + esc(tk) + '/' + esc(c.id) + '">' +
         '<div class="track-card"><span class="track-icon" aria-hidden="true">' + esc(c.icon) + '</span>' +
-        '<div class="track-body"><h3>' + esc((c.classLabel ? c.classLabel + ' ' : '') + c.title) + '</h3>' +
+        '<div class="track-body"><h3>' + esc((c.classLabel ? c.classLabel + ' ' : '') + c.title) +
+        (tk === 'school' ? ' <span class="badge badge-board">' + esc(mockBoardLabel(c.board)) + '</span>' : '') + '</h3>' +
         '<p class="track-tagline">' + c.chapters.length + ' chapters · ' + c.totalQ + ' questions</p></div>' +
         '<span class="track-arrow" aria-hidden="true">›</span></div></a>';
     });
