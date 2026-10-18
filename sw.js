@@ -1,10 +1,10 @@
 /* ============================================================
-   Shaheen Academy service worker — v2
-   Bump CACHE (e.g. 'shaheen-v3') whenever index.html, styles.css,
+   Shaheen Academy service worker — v3
+   Bump CACHE (e.g. 'shaheen-v4') whenever index.html, styles.css,
    app.js, or any data/icon/manifest file changes, so users get
    the fresh version. Old caches are deleted on activate.
    ============================================================ */
-var CACHE = 'shaheen-v2';
+var CACHE = 'shaheen-v3';
 
 var PRECACHE = [
   './',
@@ -16,6 +16,7 @@ var PRECACHE = [
   './data/school-other.js',
   './data/testprep.js',
   './data/skills.js',
+  './data/blog.js',
   './manifest.json',
   './icons/icon-192.svg',
   './icons/icon-512.svg',
