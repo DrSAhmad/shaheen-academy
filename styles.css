@@ -705,3 +705,105 @@ body.modal-open { overflow: hidden; }
 @media print {
   .utility-bar, .modal-backdrop { display: none !important; }
 }
+
+/* ============================================================
+   Section 15 — v3 pages: footer, about, contact/FAQ, blog
+   ============================================================ */
+
+/* Site footer */
+.site-footer {
+  max-width: var(--content-max, 720px);
+  margin: 26px auto 0;
+  padding: 18px 16px 8px;
+  text-align: center;
+  border-top: 1px solid var(--line);
+}
+.footer-links { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: center; margin-bottom: 10px; }
+.footer-links a { color: var(--emerald-deep); font-weight: 600; font-size: 0.92rem; text-decoration: none; }
+.footer-links a:hover { text-decoration: underline; }
+.footer-note { color: var(--muted); font-size: 0.82rem; margin: 0 0 6px; }
+
+/* About page */
+.about-tracks { display: grid; gap: 12px; }
+.about-mini { margin: 0; }
+.about-mini .big { font-size: 1.8rem; display: block; margin-bottom: 6px; }
+.about-mini h3 { margin: 0 0 4px; }
+.honesty { border-left: 4px solid var(--gold); }
+.tight-list { margin: 0; padding-left: 20px; }
+.tight-list li { margin-bottom: 8px; line-height: 1.55; }
+
+/* Contact + FAQ */
+.v2-textarea { resize: vertical; min-height: 110px; font-family: inherit; }
+.faq { display: grid; gap: 8px; }
+.faq-item {
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card); overflow: hidden;
+}
+.faq-item summary {
+  cursor: pointer; padding: 12px 14px; font-weight: 700;
+  color: var(--emerald-deep); list-style: none;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
+}
+.faq-item summary::-webkit-details-marker { display: none; }
+.faq-item summary::after { content: "+"; font-size: 1.2rem; color: var(--gold-dark); flex: 0 0 auto; }
+.faq-item[open] summary::after { content: "–"; }
+.faq-item p { margin: 0; padding: 0 14px 14px; line-height: 1.6; color: var(--ink); }
+
+/* Blog list */
+.cat-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.cat-chip {
+  display: inline-block; padding: 7px 14px; border-radius: 999px;
+  border: 1px solid var(--line); background: var(--card);
+  color: var(--emerald-deep); font-size: 0.85rem; font-weight: 600; text-decoration: none;
+}
+.cat-chip.active { background: var(--emerald); border-color: var(--emerald); color: #fff; }
+.blog-list { display: grid; gap: 12px; }
+.blog-card { margin: 0; }
+.blog-title { margin: 8px 0 4px; font-size: 1.12rem; line-height: 1.4; }
+.blog-meta { color: var(--muted); font-size: 0.8rem; margin: 0 0 8px; }
+.blog-excerpt { margin: 0 0 10px; line-height: 1.6; color: var(--ink); font-size: 0.94rem; }
+.blog-read { color: var(--emerald); font-weight: 700; font-size: 0.9rem; }
+
+/* Blog post */
+.post { margin-bottom: 14px; }
+.post-title { font-size: 1.45rem; line-height: 1.35; margin: 10px 0 6px; }
+.post-meta { color: var(--muted); font-size: 0.85rem; margin: 0 0 12px; }
+.post-lede {
+  font-size: 1.02rem; line-height: 1.65; color: var(--emerald-deep);
+  border-left: 3px solid var(--gold); padding-left: 12px; margin: 0 0 16px;
+}
+.post-body { font-size: 0.97rem; line-height: 1.75; color: var(--ink); }
+.post-body h3 { margin: 22px 0 8px; font-size: 1.08rem; color: var(--emerald-deep); }
+.post-body p { margin: 0 0 12px; }
+.post-body ul, .post-body ol { margin: 0 0 12px; padding-left: 22px; }
+.post-body li { margin-bottom: 7px; }
+.post-body a { color: var(--emerald); font-weight: 600; }
+.post-body strong { color: var(--ink); }
+
+/* Home blog teaser */
+.teaser-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.teaser-head h2 { font-size: 1.1rem; }
+.teaser-link {
+  display: block; padding: 10px 0; border-top: 1px solid var(--line);
+  text-decoration: none; color: inherit;
+}
+.teaser-link strong { display: block; color: var(--emerald-deep); font-size: 0.95rem; margin-bottom: 3px; }
+.teaser-link .small { font-size: 0.78rem; }
+
+/* v3 counter upgrade: pulsing LIVE dot + visible tick animation */
+.live-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #e5484d; margin-right: 6px; vertical-align: baseline;
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.72); }
+}
+#visitor-count, #learning-now { display: inline-block; }
+.tick-flash { animation: tickFlash 0.6s ease; }
+@keyframes tickFlash {
+  0% { transform: scale(1.14); color: #8a6d1a; }
+  100% { transform: scale(1); }
+}
+.visitor-sub { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
