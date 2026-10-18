@@ -1,4 +1,717 @@
 /* ============================================================
+   Shaheen Academy — v2 dynamic features (front-end PROTOTYPE)
+   Added 2026-10-18. This module is fully CLIENT-SIDE ONLY —
+   there is no backend (static GitHub Pages hosting). Everything
+   below is a mockup/demo:
+     1. Utility bar: live date + IP-based city (cached daily,
+        graceful "Pakistan" fallback; never blocks rendering).
+     2. Daily visitor counter: DETERMINISTIC demo value derived
+        from the date — 4500 + (FNV-1a('YYYY-MM-DD') % 600), so it
+        is stable all day, changes daily, and never drops below
+        4500 — plus a cosmetic +1 tick every ~45s (capped +40).
+        SIMULATED. Not real analytics.
+     3. Auth: sign-up / sign-in MOCKUP with Student / Teacher /
+        Parent roles. Accounts are stored in localStorage ON THIS
+        DEVICE ONLY (plain demo storage, never a real credential
+        store). UI is clearly labeled as a demo prototype.
+     4. Live Classes: seeded demo classes + teacher-created classes
+        (localStorage); enrollments are local; the classroom is a
+        MOCKUP — video placeholder, local-only chat, raise-hand
+        toggle. No real video/audio.
+   The v1 engine (lessons, quizzes, XP/streaks, certificates, PWA)
+   is untouched. This IIFE runs BEFORE the engine and exposes
+   window.__saV2 = { vLive, vAccount, afterRender, ... } which the
+   engine's router calls for the new 'live' and 'account' routes.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  /* ---------------- tiny helpers (self-contained) ---------------- */
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+  function $(id) { return document.getElementById(id); }
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function dayStr(d) {
+    return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+  }
+  function fmtNum(n) {
+    try { return Number(n).toLocaleString('en-US'); }
+    catch (e) { return String(n); }
+  }
+  function lsGet(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function lsSet(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { /* storage unavailable */ }
+  }
+
+  /* ---------------- 1. Utility bar: date + location ---------------- */
+  var MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+  var DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+  // Live current date, e.g. "Sunday, 18 October 2026". Re-renders every
+  // minute so it rolls over correctly at midnight without a reload.
+  function renderDate() {
+    var el = $('util-date');
+    if (!el) return;
+    var d = new Date();
+    el.textContent = DAYS[d.getDay()] + ', ' + d.getDate() + ' ' +
+                     MONTHS[d.getMonth()] + ' ' + d.getFullYear();
+  }
+
+  // Visitor location via free IP geolocation. Cached per day in
+  // localStorage; falls back to "Pakistan" instantly and on any error.
+  // Never blocks rendering, never asks for browser geolocation permission.
+  var LOC_KEY = 'shaheen-loc-v2';
+  function renderLocation() {
+    var el = $('util-location');
+    if (!el) return;
+    var today = dayStr(new Date());
+    var cached = lsGet(LOC_KEY, null);
+    if (cached && cached.day === today && cached.city) {
+      el.textContent = '📍 ' + cached.city;
+      return;
+    }
+    el.textContent = '📍 Pakistan'; // immediate graceful fallback
+    try {
+      var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctrl) { try { ctrl.abort(); } catch (e) {} } }, 4000);
+      fetch('https://ipapi.co/city/', ctrl ? { signal: ctrl.signal } : {})
+        .then(function (r) { if (!r.ok) throw new Error('geo-http'); return r.text(); })
+        .then(function (city) {
+          clearTimeout(timer);
+          city = (city || '').trim();
+          if (city && city.length < 60) {
+            el.textContent = '📍 ' + city; // textContent: no HTML injection
+            lsSet(LOC_KEY, { day: today, city: city });
+          }
+        })
+        .catch(function () { clearTimeout(timer); /* keep "Pakistan" fallback */ });
+    } catch (e) { /* keep fallback */ }
+  }
+
+  /* ---------------- 2. Daily visitor counter (SIMULATED demo) ----------------
+     Deterministic per-day value: 4500 + (FNV-1a('YYYY-MM-DD') % 600).
+     Range 4500–5099: stable all day, different each day, never below
+     4500. The +1 tick every ~45s (capped at +40) is purely cosmetic so
+     the page feels alive. THIS IS NOT REAL ANALYTICS — front-end demo. */
+  function hashStr(s) {
+    var h = 2166136261;
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
+    }
+    return h >>> 0;
+  }
+  function dailyBase() { return 4500 + (hashStr(dayStr(new Date())) % 600); }
+  var liveTick = 0; // cosmetic tick, capped at +40 per page session
+  function visitorNow() { return dailyBase() + liveTick; }
+  setInterval(function () {
+    if (liveTick >= 40) return;
+    liveTick += 1;
+    var el = $('visitor-count');
+    if (el) el.textContent = fmtNum(visitorNow());
+  }, 45000);
+
+  // Injected into the home view after the engine renders it.
+  function injectVisitorCard() {
+    if ($('visitor-count')) return; // already injected for this render
+    var app = $('app');
+    if (!app) return;
+    var html =
+      '<section class="card visitor-card" aria-label="Learners visiting today">' +
+        '<div class="visitor-num" id="visitor-count">' + fmtNum(visitorNow()) + '</div>' +
+        '<div class="visitor-label">👥 learners visited today</div>' +
+        '<div class="visitor-demo"><span class="visitor-demo-tag">demo counter</span></div>' +
+      '</section>';
+    var anchor = app.querySelector('.stat-grid');
+    if (anchor) anchor.insertAdjacentHTML('afterend', html);
+    else app.insertAdjacentHTML('afterbegin', html);
+  }
+
+  /* ---------------- 3. Auth mockup (localStorage only) ----------------
+     DEMO PROTOTYPE: accounts live in this device's localStorage only.
+     Passwords are stored in plain text in a demo-only key — this must
+     NEVER be mistaken for a real credential store. */
+  var AUTH_KEY = 'shaheen-auth-v2';
+  var ROLES = {
+    student: { label: 'Student', icon: '🎒', badge: 'badge-ok' },
+    teacher: { label: 'Teacher', icon: '👩‍🏫', badge: 'badge-gold' },
+    parent:  { label: 'Parent',  icon: '👪', badge: 'badge-soon' }
+  };
+
+  function loadAuth() {
+    var a = lsGet(AUTH_KEY, null);
+    if (!a || typeof a !== 'object') a = { users: {}, session: null };
+    if (!a.users || typeof a.users !== 'object') a.users = {};
+    return a;
+  }
+  function saveAuth(a) { lsSet(AUTH_KEY, a); }
+  function currentUser() {
+    var a = loadAuth();
+    if (!a.session || !a.users[a.session]) return null;
+    return a.users[a.session];
+  }
+
+  // Header auth area: "Join / Sign in" button, or user chip + dropdown.
+  function renderAuthArea() {
+    var area = $('auth-area');
+    if (!area) return;
+    var u = currentUser();
+    if (!u) {
+      area.innerHTML = '<button class="auth-join" data-v2action="auth-open">Join / Sign in</button>';
+      return;
+    }
+    var r = ROLES[u.role] || ROLES.student;
+    var initial = ((u.name || 'S').trim().charAt(0) || 'S').toUpperCase();
+    area.innerHTML =
+      '<div class="auth-user" id="auth-user">' +
+        '<button class="auth-chip" data-v2action="auth-menu" aria-haspopup="true" aria-expanded="false">' +
+          '<span class="auth-avatar" aria-hidden="true">' + esc(initial) + '</span>' +
+          '<span class="auth-name">' + esc(u.name) + '</span>' +
+          '<span class="badge ' + r.badge + ' auth-role">' + esc(r.label) + '</span>' +
+        '</button>' +
+        '<div class="auth-menu" id="auth-menu" hidden>' +
+          '<a href="#/account" data-v2action="auth-menu-link">👤 My dashboard</a>' +
+          '<a href="#/live" data-v2action="auth-menu-link">🎥 Live classes</a>' +
+          '<button data-v2action="auth-signout">↪ Sign out</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  /* ----- Auth modal ----- */
+  var modalRoot = null;
+  function getModalRoot() {
+    if (!modalRoot) modalRoot = $('modal-root');
+    return modalRoot;
+  }
+  function closeModal() {
+    var m = getModalRoot();
+    if (m) m.innerHTML = '';
+    document.body.classList.remove('modal-open');
+  }
+
+  var authTab = 'signup';   // 'signup' | 'signin'
+  var authRole = 'student'; // selected role card
+  var authNotice = '';      // one-line notice shown above the form (e.g. "sign in to enroll")
+
+  function openAuth(tab, notice) {
+    authTab = (tab === 'signin') ? 'signin' : 'signup';
+    authNotice = notice || '';
+    if (!ROLES[authRole]) authRole = 'student';
+    renderAuthModal();
+    document.body.classList.add('modal-open');
+    var m = getModalRoot();
+    var first = m ? m.querySelector('.v2-input') : null;
+    if (first) setTimeout(function () { try { first.focus(); } catch (e) {} }, 60);
+  }
+
+  function roleCardsHTML() {
+    return Object.keys(ROLES).map(function (k) {
+      var r = ROLES[k];
+      return '<button type="button" class="role-card' + (authRole === k ? ' selected' : '') + '"' +
+        ' data-v2action="auth-role" data-role="' + k + '" aria-pressed="' + (authRole === k) + '">' +
+        '<span class="role-icon" aria-hidden="true">' + r.icon + '</span>' +
+        '<span class="role-label">' + r.label + '</span></button>';
+    }).join('');
+  }
+
+  function renderAuthModal() {
+    var m = getModalRoot();
+    if (!m) return;
+    var isSignup = authTab === 'signup';
+    m.innerHTML =
+      '<div class="modal-backdrop" data-v2action="modal-backdrop">' +
+      '<div class="modal" role="dialog" aria-modal="true" aria-label="' + (isSignup ? 'Create account' : 'Sign in') + '">' +
+        '<button class="modal-close" data-v2action="modal-close" aria-label="Close">✕</button>' +
+        '<h2 class="modal-title">' + (isSignup ? 'Create your account' : 'Welcome back') + '</h2>' +
+        (authNotice ? '<p class="auth-notice">' + esc(authNotice) + '</p>' : '') +
+        '<div class="tabs" role="tablist">' +
+          '<button type="button" class="tab' + (isSignup ? ' active' : '') + '" data-v2action="auth-tab" data-tab="signup" role="tab" aria-selected="' + isSignup + '">Create account</button>' +
+          '<button type="button" class="tab' + (!isSignup ? ' active' : '') + '" data-v2action="auth-tab" data-tab="signin" role="tab" aria-selected="' + (!isSignup) + '">Sign in</button>' +
+        '</div>' +
+        '<form data-v2form="auth" novalidate>' +
+          '<div class="role-grid" role="radiogroup" aria-label="Choose your role">' + roleCardsHTML() + '</div>' +
+          (isSignup
+            ? '<label class="v2-label" for="auth-name">Full name</label>' +
+              '<input class="v2-input" id="auth-name" name="name" type="text" maxlength="60" placeholder="e.g. Ali Raza" autocomplete="name">'
+            : '') +
+          '<label class="v2-label" for="auth-email">Email</label>' +
+          '<input class="v2-input" id="auth-email" name="email" type="email" maxlength="120" placeholder="you@example.com" autocomplete="email">' +
+          '<label class="v2-label" for="auth-pass">Password</label>' +
+          '<input class="v2-input" id="auth-pass" name="password" type="password" maxlength="72" placeholder="••••••••" autocomplete="' + (isSignup ? 'new-password' : 'current-password') + '">' +
+          '<div class="auth-error" id="auth-error" role="alert" hidden></div>' +
+          '<button class="btn btn-primary btn-block" type="submit" style="margin-top:14px">' + (isSignup ? 'Create account' : 'Sign in') + '</button>' +
+          '<p class="demo-note">Demo prototype — your details stay on this device.</p>' +
+        '</form>' +
+      '</div></div>';
+  }
+
+  function handleAuthSubmit(form) {
+    var errBox = $('auth-error');
+    function fail(msg) {
+      if (errBox) { errBox.textContent = msg; errBox.hidden = false; }
+    }
+    var email = ((form.email && form.email.value) || '').trim().toLowerCase();
+    var pass = (form.password && form.password.value) || '';
+    var name = (form.name && form.name.value ? form.name.value : '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { fail('Please enter a valid email address.'); return; }
+    if (pass.length < 4) { fail('Password must be at least 4 characters.'); return; }
+    var a = loadAuth();
+    if (authTab === 'signup') {
+      if (!name) { fail('Please enter your name.'); return; }
+      if (a.users[email]) { fail('An account with this email already exists — try signing in.'); return; }
+      // DEMO ONLY: plain-text storage on this device. Never a real credential store.
+      a.users[email] = { name: name.slice(0, 60), email: email, pass: pass,
+                         role: authRole, created: Date.now() };
+      a.session = email;
+      saveAuth(a);
+    } else {
+      var u = a.users[email];
+      if (!u || u.pass !== pass) { fail('Email or password did not match. Try again or create an account.'); return; }
+      a.session = email;
+      saveAuth(a);
+    }
+    closeModal();
+    renderAuthArea();
+    rerender();
+  }
+
+  function signOut() {
+    var a = loadAuth();
+    a.session = null;
+    saveAuth(a);
+    renderAuthArea();
+    rerender();
+  }
+
+  // Re-run the engine router (it listens for 'hashchange').
+  function rerender() {
+    try { window.dispatchEvent(new Event('hashchange')); } catch (e) {}
+  }
+
+  /* ---------------- 4. Live / online classes (mockup) ---------------- */
+  var CLASS_KEY  = 'shaheen-classes-v2';  // teacher-created classes (local)
+  var ENROLL_KEY = 'shaheen-enroll-v2';   // enrolled class ids (local)
+  var CHILD_KEY  = 'shaheen-children-v2'; // parent's children names (local)
+
+  // Seeded demo schedule. Dates are generated relative to today so the
+  // list always looks upcoming. Pure front-end demo content.
+  function seedClasses() {
+    var now = Date.now();
+    function at(dayOffset, h, min) {
+      var t = new Date(now);
+      t.setDate(t.getDate() + dayOffset);
+      t.setHours(h, min, 0, 0);
+      return t.getTime();
+    }
+    return [
+      { id: 'demo-phy10', title: 'Class 10 Physics — Numericals Bootcamp',
+        subject: 'Physics', teacher: 'Sir Imran Khan', at: at(1, 17, 0),
+        seats: 120, enrolled: 86, demo: true },
+      { id: 'demo-mdcat', title: 'MDCAT Biology — Past Paper Drill',
+        subject: 'Biology', teacher: 'Dr. Ayesha Malik', at: at(2, 18, 30),
+        seats: 200, enrolled: 143, demo: true },
+      { id: 'demo-eng', title: 'Spoken English — Beginner',
+        subject: 'English', teacher: 'Miss Sara Ahmed', at: at(3, 16, 0),
+        seats: 80, enrolled: 52, demo: true }
+    ];
+  }
+
+  function customClasses() {
+    var arr = lsGet(CLASS_KEY, []);
+    return Array.isArray(arr) ? arr : [];
+  }
+  function saveCustomClasses(arr) { lsSet(CLASS_KEY, arr); }
+  function allClasses() { return seedClasses().concat(customClasses()); }
+  function findClass(id) {
+    var all = allClasses();
+    for (var i = 0; i < all.length; i++) { if (all[i].id === id) return all[i]; }
+    return null;
+  }
+
+  function enrollments() {
+    var arr = lsGet(ENROLL_KEY, []);
+    return Array.isArray(arr) ? arr : [];
+  }
+  function isEnrolled(id) { return enrollments().indexOf(id) >= 0; }
+  function enroll(id) {
+    var e = enrollments();
+    if (e.indexOf(id) < 0) { e.push(id); lsSet(ENROLL_KEY, e); }
+    // Bump the seat count on teacher-created classes (persisted).
+    var arr = customClasses(), changed = false;
+    for (var i = 0; i < arr.length; i++) {
+      if (arr[i].id === id) { arr[i].enrolled = (arr[i].enrolled || 0) + 1; changed = true; }
+    }
+    if (changed) saveCustomClasses(arr);
+  }
+  function seatsLeft(c) {
+    var taken = (c.enrolled || 0) + (isEnrolled(c.id) ? 1 : 0);
+    return Math.max(0, (c.seats || 0) - taken);
+  }
+  function fmtWhen(ts) {
+    try {
+      return new Date(ts).toLocaleString(undefined,
+        { weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+    } catch (e) { return ''; }
+  }
+
+  function classCard(c) {
+    var u = currentUser();
+    var enrolled = isEnrolled(c.id);
+    var left = seatsLeft(c);
+    var h = '<div class="class-card">' +
+      '<div class="class-top"><span class="badge badge-gold">' + esc(c.subject || 'General') + '</span>' +
+      (c.demo ? '<span class="demo-tag">demo</span>' : '<span class="demo-tag mine">created by you</span>') + '</div>' +
+      '<h3 class="class-title">' + esc(c.title) + '</h3>' +
+      '<p class="class-meta">👩‍🏫 ' + esc(c.teacher || 'Shaheen Academy') +
+      '<br>🗓 ' + esc(fmtWhen(c.at)) +
+      '<br>💺 ' + left + ' seats left</p>';
+    if (enrolled) {
+      h += '<div class="btn-row"><button class="btn btn-primary" data-v2action="room-open" data-id="' + esc(c.id) + '">▶ Join class</button>' +
+           '<span class="badge badge-ok" style="align-self:center">✓ Enrolled</span></div>';
+    } else if (!u) {
+      h += '<button class="btn btn-outline btn-block" data-v2action="enroll-need-auth">Enroll — join / sign in first</button>';
+    } else {
+      h += '<button class="btn btn-outline btn-block" data-v2action="enroll" data-id="' + esc(c.id) + '"' +
+           (left <= 0 ? ' disabled' : '') + '>' +
+           (left <= 0 ? 'Class full' : 'Enroll · ' + left + ' seats left') + '</button>';
+    }
+    return h + '</div>';
+  }
+
+  // New '#/live' route view (called by the engine router).
+  function vLive() {
+    var u = currentUser();
+    var h = '<h1 class="page-title">🎥 Live Classes</h1>' +
+      '<p class="page-sub">Learn live with teachers · <span class="demo-tag">prototype</span></p>';
+    if (u && u.role === 'teacher') {
+      h += '<section class="card"><h3 style="margin-top:0">👩‍🏫 Teach on Shaheen</h3>' +
+        '<div class="btn-row"><button class="btn btn-gold" data-v2action="instant-class">⚡ Start instant class</button>' +
+        '<a class="btn btn-outline" href="#/account">Schedule a class</a></div>' +
+        '<p class="small muted" style="margin:10px 0 0">Instant classes open a demo classroom right away.</p></section>';
+    }
+    var mine = customClasses();
+    if (mine.length) {
+      h += '<h2>Scheduled on this device</h2>';
+      mine.forEach(function (c) { h += classCard(c); });
+    }
+    h += '<h2>Upcoming classes</h2>';
+    seedClasses().forEach(function (c) { h += classCard(c); });
+    h += '<p class="demo-note">Demo schedule — classes are simulated for this prototype.</p>';
+    return h;
+  }
+
+  /* ----- Role dashboards: new '#/account' route view ----- */
+  function vAccount() {
+    var u = currentUser();
+    if (!u) {
+      return '<h1 class="page-title">👤 My Account</h1>' +
+        '<section class="card empty"><span class="big" aria-hidden="true">🔐</span>' +
+        '<h2>Join Shaheen Academy</h2>' +
+        '<p>Create a free demo account as a Student, Teacher, or Parent to unlock dashboards and live classes.</p>' +
+        '<button class="btn btn-primary" data-v2action="auth-open">Join / Sign in</button>' +
+        '<p class="demo-note">Demo prototype — your details stay on this device.</p></section>';
+    }
+    var r = ROLES[u.role] || ROLES.student;
+    var initial = ((u.name || 'S').trim().charAt(0) || 'S').toUpperCase();
+    var h = '<h1 class="page-title">👤 My Account</h1>' +
+      '<section class="card"><div class="acct-head">' +
+        '<span class="auth-avatar big" aria-hidden="true">' + esc(initial) + '</span>' +
+        '<div><h3 style="margin:0">' + esc(u.name) + '</h3>' +
+        '<p class="muted small" style="margin:2px 0 0">' + esc(u.email) + ' · ' +
+        '<span class="badge ' + r.badge + '">' + esc(r.label) + '</span></p></div></div>' +
+      '<div class="btn-row"><button class="btn btn-outline" data-v2action="auth-signout">Sign out</button></div></section>';
+    if (u.role === 'teacher') h += teacherPanel(u);
+    else if (u.role === 'parent') h += parentPanel();
+    else h += studentPanel();
+    return h;
+  }
+
+  function teacherPanel(u) {
+    var mine = customClasses().filter(function (c) { return c.by === u.email; });
+    var h = '<section class="card"><h2 style="margin-top:0">👩‍🏫 Teach on Shaheen</h2>' +
+      '<p class="small muted">Schedule a live class — it appears in Live Classes on this device (demo).</p>' +
+      '<form data-v2form="create-class">' +
+      '<label class="v2-label" for="cc-title">Class title</label>' +
+      '<input class="v2-input" id="cc-title" name="title" type="text" maxlength="80" placeholder="e.g. Class 9 Chemistry — Chapter 1" required>' +
+      '<label class="v2-label" for="cc-subject">Subject</label>' +
+      '<input class="v2-input" id="cc-subject" name="subject" type="text" maxlength="40" placeholder="e.g. Chemistry" required>' +
+      '<label class="v2-label" for="cc-when">Date &amp; time</label>' +
+      '<input class="v2-input" id="cc-when" name="when" type="datetime-local" required>' +
+      '<label class="v2-label" for="cc-seats">Seats</label>' +
+      '<input class="v2-input" id="cc-seats" name="seats" type="number" min="1" max="1000" value="50">' +
+      '<button class="btn btn-gold btn-block" type="submit" style="margin-top:14px">➕ Create class</button>' +
+      '</form></section>';
+    if (mine.length) {
+      h += '<h2>My scheduled classes</h2>';
+      mine.forEach(function (c) { h += classCard(c); });
+    }
+    return h;
+  }
+
+  function handleCreateClass(form) {
+    var u = currentUser();
+    if (!u) { openAuth('signup', 'Please join / sign in first.'); return; }
+    var title = ((form.title && form.title.value) || '').trim();
+    var subject = ((form.subject && form.subject.value) || '').trim();
+    var when = form.when && form.when.value ? new Date(form.when.value).getTime() : NaN;
+    var seats = form.seats ? parseInt(form.seats.value, 10) : 50;
+    if (!title || !subject || isNaN(when)) return; // native `required` handles messaging
+    if (!(seats > 0)) seats = 50;
+    var arr = customClasses();
+    arr.unshift({ id: 'c-' + Date.now(), title: title.slice(0, 80), subject: subject.slice(0, 40),
+      teacher: u.name, by: u.email, at: when, seats: Math.min(seats, 1000), enrolled: 0 });
+    saveCustomClasses(arr);
+    rerender();
+  }
+
+  function parentPanel() {
+    var kids = lsGet(CHILD_KEY, []);
+    if (!Array.isArray(kids)) kids = [];
+    // Demo: a child's progress mirrors this device's learning progress
+    // (the v1 engine stores it under 'shaheen-v1').
+    var prog = lsGet('shaheen-v1', null);
+    var xp = (prog && typeof prog.xp === 'number') ? prog.xp : 0;
+    var lessons = (prog && prog.read && typeof prog.read === 'object') ? Object.keys(prog.read).length : 0;
+    var streak = (prog && prog.streak && typeof prog.streak.count === 'number') ? prog.streak.count : 0;
+    var h = '<section class="card"><h2 style="margin-top:0">👪 Parent dashboard</h2>' +
+      '<p class="small muted">Add your children and follow their learning. ' +
+      '<strong>Demo:</strong> progress shown is from this device.</p>' +
+      '<form data-v2form="add-child" class="row-form">' +
+      '<input class="v2-input" name="child" type="text" maxlength="40" placeholder="Child\'s name" required aria-label="Child\'s name">' +
+      '<button class="btn btn-primary" type="submit">Add</button></form>';
+    if (!kids.length) {
+      h += '<p class="muted" style="margin:12px 0 0">No children added yet.</p>';
+    } else {
+      h += '<div class="kid-list">';
+      kids.forEach(function (k, i) {
+        h += '<div class="kid-card">' +
+          '<span class="auth-avatar" aria-hidden="true">' + esc(String(k).charAt(0).toUpperCase()) + '</span>' +
+          '<div class="kid-body"><strong>' + esc(k) + '</strong>' +
+          '<p class="small muted" style="margin:2px 0 0">⭐ ' + xp + ' XP · 📄 ' + lessons +
+          ' lessons · 🔥 ' + streak + ' day streak <span class="demo-tag">demo</span></p></div>' +
+          '<button class="icon-btn" data-v2action="remove-child" data-i="' + i + '" aria-label="Remove ' + esc(k) + '">✕</button></div>';
+      });
+      h += '</div>';
+    }
+    return h + '</section>';
+  }
+
+  function studentPanel() {
+    var ids = enrollments();
+    var h = '<section class="card"><h2 style="margin-top:0">🎒 My upcoming classes</h2>';
+    if (!ids.length) {
+      h += '<p class="muted">You are not enrolled in any live class yet.</p>' +
+        '<a class="btn btn-primary" href="#/live">Browse live classes</a>';
+    } else {
+      ids.forEach(function (id) {
+        var c = findClass(id);
+        if (c) h += classCard(c);
+      });
+    }
+    return h + '</section>';
+  }
+
+  /* ---------------- 5. Mockup classroom ----------------
+     PROTOTYPE: video placeholder, local-only chat, raise-hand toggle.
+     No real video/audio, nothing leaves the device. */
+  var roomState = null; // { classId, hand, msgs: [{from, role, text, t}] }
+
+  function openRoom(id) {
+    var c = findClass(id);
+    if (!c) return;
+    var u = currentUser();
+    roomState = {
+      classId: id,
+      hand: false,
+      msgs: [
+        { from: c.teacher || 'Teacher', role: 'teacher',
+          text: 'Welcome everyone! 👋 We will begin in a minute.', t: Date.now() - 120000 },
+        { from: 'Areeba', role: 'student', text: 'Assalam o Alaikum!', t: Date.now() - 60000 },
+        { from: c.teacher || 'Teacher', role: 'teacher',
+          text: 'Walaikum Assalam. Please keep your mics muted (demo).', t: Date.now() - 30000 }
+      ]
+    };
+    var m = getModalRoot();
+    if (!m) return;
+    var who = u ? u.name + ' (' + ((ROLES[u.role] || {}).label || 'Student') + ')' : 'Guest';
+    m.innerHTML =
+      '<div class="modal-backdrop room-backdrop" data-v2action="room-bg">' +
+      '<div class="room" role="dialog" aria-modal="true" aria-label="Demo classroom">' +
+        '<div class="room-head">' +
+          '<span class="live-dot" aria-hidden="true"></span><span class="live-text">LIVE · demo</span>' +
+          '<span class="room-title">' + esc(c.title) + '</span>' +
+          '<button class="btn btn-outline btn-sm" data-v2action="room-leave">Leave</button>' +
+        '</div>' +
+        '<div class="room-video"><div class="room-video-inner">' +
+          '<span class="room-video-icon" aria-hidden="true">📡</span>' +
+          '<p><strong>Live class will appear here (demo)</strong></p>' +
+          '<p class="small">' + esc(c.teacher || 'Teacher') + ' · ' + esc(c.subject || 'General') + '</p>' +
+        '</div></div>' +
+        '<div class="room-chat" id="room-chat" aria-live="polite"></div>' +
+        '<form class="room-form" data-v2form="chat">' +
+          '<input class="v2-input" name="msg" type="text" maxlength="200" placeholder="Type a message…" autocomplete="off" aria-label="Chat message">' +
+          '<button class="btn btn-primary" type="submit">Send</button>' +
+        '</form>' +
+        '<div class="room-actions">' +
+          '<button class="btn btn-outline" id="hand-btn" data-v2action="room-hand" aria-pressed="false">✋ Raise hand</button>' +
+        '</div>' +
+        '<p class="demo-note">Demo classroom — prototype only. No real video or audio. Signed in as ' + esc(who) + '.</p>' +
+      '</div></div>';
+    document.body.classList.add('modal-open');
+    paintChat();
+  }
+
+  function paintChat() {
+    var box = $('room-chat');
+    if (!box || !roomState) return;
+    box.innerHTML = roomState.msgs.map(function (m) {
+      var cls = m.role === 'teacher' ? 'chat-teacher'
+              : m.role === 'you' ? 'chat-you'
+              : m.role === 'sys' ? 'chat-sys' : 'chat-student';
+      return '<div class="chat-msg ' + cls + '"><span class="chat-from">' + esc(m.from) +
+             '</span><span class="chat-text">' + esc(m.text) + '</span></div>';
+    }).join('');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function sendChat(form) {
+    var text = ((form.msg && form.msg.value) || '').trim();
+    if (!text || !roomState) return;
+    var u = currentUser();
+    roomState.msgs.push({ from: 'You' + (u ? ' (' + u.name + ')' : ''),
+                          role: 'you', text: text.slice(0, 200), t: Date.now() });
+    form.msg.value = '';
+    paintChat();
+  }
+
+  function toggleHand(btn) {
+    if (!roomState) return;
+    roomState.hand = !roomState.hand;
+    btn.setAttribute('aria-pressed', roomState.hand ? 'true' : 'false');
+    btn.textContent = roomState.hand ? '✋ Hand raised — tap to lower' : '✋ Raise hand';
+    btn.classList.toggle('btn-gold', roomState.hand);
+    btn.classList.toggle('btn-outline', !roomState.hand);
+    roomState.msgs.push({ from: 'System', role: 'sys',
+      text: roomState.hand ? 'You raised your hand ✋' : 'You lowered your hand.', t: Date.now() });
+    paintChat();
+  }
+
+  // Teacher-only: creates an instant demo room and opens it.
+  function startInstantClass() {
+    var u = currentUser();
+    if (!u || u.role !== 'teacher') return;
+    var arr = customClasses();
+    var c = { id: 'instant-' + Date.now(), title: 'Instant class by ' + u.name,
+      subject: 'General', teacher: u.name, by: u.email, at: Date.now(),
+      seats: 100, enrolled: 0, instant: true };
+    arr.unshift(c);
+    saveCustomClasses(arr);
+    openRoom(c.id);
+  }
+
+  /* ---------------- 6. Events (document-level; engine untouched) ---------------- */
+  document.addEventListener('click', function (ev) {
+    // Close the header dropdown on outside clicks.
+    var menu = $('auth-menu');
+    if (menu && !menu.hidden && !ev.target.closest('#auth-user')) {
+      menu.hidden = true;
+    }
+
+    var el = ev.target.closest('[data-v2action]');
+    if (!el) return;
+    var a = el.getAttribute('data-v2action');
+
+    if (a === 'auth-open') { openAuth('signup', ''); }
+    else if (a === 'auth-tab') { authTab = el.getAttribute('data-tab'); renderAuthModal(); }
+    else if (a === 'auth-role') { authRole = el.getAttribute('data-role'); renderAuthModal(); }
+    else if (a === 'modal-close') { closeModal(); }
+    else if (a === 'modal-backdrop') { if (ev.target === el) closeModal(); }
+    else if (a === 'auth-menu') {
+      var mm = $('auth-menu');
+      if (mm) {
+        mm.hidden = !mm.hidden;
+        el.setAttribute('aria-expanded', String(!mm.hidden));
+      }
+    }
+    else if (a === 'auth-menu-link') { var mm2 = $('auth-menu'); if (mm2) mm2.hidden = true; }
+    else if (a === 'auth-signout') { signOut(); }
+    else if (a === 'enroll-need-auth') { openAuth('signup', 'Please join / sign in to enroll in this class.'); }
+    else if (a === 'enroll') {
+      if (!currentUser()) { openAuth('signup', 'Please join / sign in to enroll.'); return; }
+      enroll(el.getAttribute('data-id'));
+      rerender();
+    }
+    else if (a === 'room-open') { openRoom(el.getAttribute('data-id')); }
+    else if (a === 'room-leave') { roomState = null; closeModal(); }
+    else if (a === 'room-bg') { if (ev.target === el) { roomState = null; closeModal(); } }
+    else if (a === 'room-hand') { toggleHand(el); }
+    else if (a === 'instant-class') { startInstantClass(); }
+    else if (a === 'remove-child') {
+      var kids = lsGet(CHILD_KEY, []);
+      var i = parseInt(el.getAttribute('data-i'), 10);
+      if (Array.isArray(kids) && !isNaN(i) && i >= 0 && i < kids.length) {
+        kids.splice(i, 1);
+        lsSet(CHILD_KEY, kids);
+        rerender();
+      }
+    }
+  });
+
+  document.addEventListener('submit', function (ev) {
+    var form = ev.target.closest('[data-v2form]');
+    if (!form) return;
+    ev.preventDefault();
+    var kind = form.getAttribute('data-v2form');
+    if (kind === 'auth') handleAuthSubmit(form);
+    else if (kind === 'create-class') handleCreateClass(form);
+    else if (kind === 'add-child') {
+      var name = ((form.child && form.child.value) || '').trim().slice(0, 40);
+      if (name) {
+        var kids = lsGet(CHILD_KEY, []);
+        if (!Array.isArray(kids)) kids = [];
+        kids.push(name);
+        lsSet(CHILD_KEY, kids);
+      }
+      rerender();
+    }
+    else if (kind === 'chat') sendChat(form);
+  });
+
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Escape') return;
+    var menu = $('auth-menu');
+    if (menu && !menu.hidden) { menu.hidden = true; return; }
+    closeModal();
+  });
+
+  /* ---------------- 7. Boot (runs before the engine) ---------------- */
+  renderDate();
+  renderLocation();
+  renderAuthArea();
+  setInterval(renderDate, 60000); // keep the date correct past midnight
+
+  window.__saV2 = {
+    vLive: vLive,
+    vAccount: vAccount,
+    afterRender: function (route) {
+      if (route === 'home' || !route) injectVisitorCard();
+      renderAuthArea(); // keep the header chip in sync after navigation
+    },
+    openAuth: openAuth,
+    currentUser: currentUser
+  };
+})();
+/* ============================================================
    Shaheen Academy — app.js
    Static PWA engine: hash router, lesson viewer, quizzes, XP /
    streaks / levels, search, progress, and printable certificates.
@@ -303,11 +1016,15 @@
     else if (p[0] === 'search')             html = vSearch(r.query.q || '');
     else if (p[0] === 'progress')           html = vProgress();
     else if (p[0] === 'certificate')        html = vCertificate(p[1]);
+    else if (p[0] === 'live')               html = (window.__saV2 && window.__saV2.vLive) ? window.__saV2.vLive() : vNotFound();
+    else if (p[0] === 'account')            html = (window.__saV2 && window.__saV2.vAccount) ? window.__saV2.vAccount() : vNotFound();
     else                                    html = vNotFound();
 
     appEl.innerHTML = html;
     window.scrollTo(0, 0);
     syncNav(p[0]);
+    // v2 hook: injects the visitor card on home, keeps the header auth chip in sync.
+    if (window.__saV2 && window.__saV2.afterRender) { try { window.__saV2.afterRender(p[0]); } catch (e) {} }
   }
 
   function syncNav(route) {
