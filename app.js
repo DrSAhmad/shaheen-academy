@@ -1785,6 +1785,7 @@
   function vAbout() {
     var st = siteStats();
     var h = '<h1 class="page-title">🦅 About Shaheen Academy</h1>' +
+      '<div style="text-align:center;margin:2px 0 14px"><img src="./logo.png" alt="Shaheen Academy logo" width="170" height="170" style="border-radius:28px;box-shadow:0 8px 28px rgba(0,0,0,.20)"></div>' +
       '<p class="page-sub">Learn Without Limits</p>' +
 
       '<section class="card"><h2 style="margin-top:0">Our mission</h2>' +
