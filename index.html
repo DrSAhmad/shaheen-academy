@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Shaheen Academy — Soar Higher. Learn Deeper.</title>
+<meta name="description" content="Shaheen Academy: online courses in decision-making, psychology, Islamic studies, habits and student success — by Dr. S. Ahmad.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#0d2137; --navy2:#12304f; --emerald:#0e7c5b; --emerald-d:#0a5f45;
+  --gold:#d4a437; --gold-l:#f0d488; --cream:#faf7ef; --ink:#1d2b3a; --muted:#5d6f82;
+  --card:#ffffff; --line:#e8e0cf; --red:#c0392b; --blue:#2471a3;
+  --shadow:0 10px 30px rgba(13,33,55,.10); --radius:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;background:var(--cream);color:var(--ink);line-height:1.65}
+h1,h2,h3,h4{font-family:'Sora',sans-serif;line-height:1.25;color:var(--navy)}
+a{color:inherit;text-decoration:none}
+.container{max-width:1180px;margin:0 auto;padding:0 20px}
+section{padding:64px 0}
+/* ---------- header ---------- */
+header{position:sticky;top:0;z-index:50;background:rgba(13,33,55,.97);backdrop-filter:blur(8px);color:#fff;box-shadow:0 2px 18px rgba(0,0,0,.25)}
+.nav{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;max-width:1280px;margin:0 auto}
+.brand{display:flex;align-items:center;gap:12px;cursor:pointer}
+.brand svg{width:44px;height:44px}
+.brand .t1{font-family:'Sora';font-weight:800;font-size:20px;letter-spacing:.3px}
+.brand .t1 span{color:var(--gold)}
+.brand .t2{font-size:11px;color:#bcd;letter-spacing:2px}
+.navlinks{display:flex;gap:6px;align-items:center}
+.navlinks button{background:none;border:0;color:#e8eef5;font-size:15px;font-weight:600;padding:10px 14px;border-radius:10px;cursor:pointer}
+.navlinks button:hover,.navlinks button.active{background:rgba(255,255,255,.12)}
+.btn{display:inline-block;border:0;cursor:pointer;font-weight:700;border-radius:12px;padding:13px 26px;font-size:15px;transition:.2s}
+.btn-gold{background:linear-gradient(135deg,var(--gold),#b9862f);color:#231a05}
+.btn-gold:hover{transform:translateY(-2px);box-shadow:0 8px 22px rgba(212,164,55,.45)}
+.btn-em{background:var(--emerald);color:#fff}
+.btn-em:hover{background:var(--emerald-d)}
+.btn-line{background:transparent;border:2px solid var(--gold);color:var(--gold)}
+.btn-ghost{background:rgba(255,255,255,.14);color:#fff}
+.hamb{display:none;background:none;border:0;color:#fff;font-size:26px;cursor:pointer}
+/* ---------- hero ---------- */
+.hero{background:radial-gradient(1200px 600px at 80% -10%,#1b4d6e 0%,var(--navy) 55%) ,var(--navy);color:#fff;padding:84px 0 70px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cpath d='M60 10 L110 110 L10 110 Z' fill='none' stroke='rgba(212,164,55,.06)' stroke-width='2'/%3E%3C/svg%3E");opacity:.5;pointer-events:none}
+.hero-inner{position:relative;z-index:2;display:grid;grid-template-columns:1.15fr .85fr;gap:40px;align-items:center}
+.hero h1{font-size:52px;color:#fff;font-weight:800}
+.hero h1 .gold{color:var(--gold)}
+.hero p.sub{font-size:18px;color:#c9d6e3;margin:18px 0 28px;max-width:520px}
+.hero-cta{display:flex;gap:14px;flex-wrap:wrap}
+.searchbar{margin-top:26px;display:flex;max-width:480px;background:#fff;border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+.searchbar input{flex:1;border:0;padding:15px 18px;font-size:15px;outline:none}
+.searchbar button{background:var(--emerald);color:#fff;border:0;padding:0 26px;font-weight:700;cursor:pointer;font-size:15px}
+.hero-card{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);border-radius:20px;padding:30px;backdrop-filter:blur(6px)}
+.hero-card h3{color:var(--gold-l);margin-bottom:14px;font-size:19px}
+.statgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.stat{background:rgba(255,255,255,.08);border-radius:14px;padding:16px;text-align:center}
+.stat b{display:block;font-size:28px;color:#fff;font-family:'Sora'}
+.stat span{font-size:13px;color:#b9c8d8}
+/* ---------- section titles ---------- */
+.kicker{display:inline-block;background:#e9f5ef;color:var(--emerald-d);font-weight:700;font-size:13px;letter-spacing:1.5px;text-transform:uppercase;padding:7px 16px;border-radius:999px;margin-bottom:14px}
+.stitle{font-size:36px;margin-bottom:10px}
+.ssub{color:var(--muted);font-size:17px;max-width:640px;margin-bottom:36px}
+/* ---------- course cards ---------- */
+.cgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.ccard{background:var(--card);border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--line);display:flex;flex-direction:column;transition:.25s;cursor:pointer}
+.ccard:hover{transform:translateY(-6px);box-shadow:0 18px 44px rgba(13,33,55,.16)}
+.cbanner{height:150px;display:flex;align-items:flex-end;padding:18px;color:#fff;position:relative}
+.cbanner::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 20%,rgba(0,0,0,.55))}
+.cbanner h3{position:relative;color:#fff;font-size:20px}
+.cbody{padding:20px;display:flex;flex-direction:column;gap:10px;flex:1}
+.cmeta{display:flex;gap:8px;flex-wrap:wrap;font-size:12px}
+.pill{background:#eef3f7;color:var(--navy2);padding:4px 12px;border-radius:999px;font-weight:600}
+.pill.free{background:#e7f6ee;color:var(--emerald-d)}
+.cbody p{font-size:14.5px;color:var(--muted);flex:1}
+.cfoot{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+.price{font-weight:800;font-size:18px;color:var(--navy)}
+.price small{font-weight:500;color:var(--muted);font-size:12px}
+.progressbar{height:8px;background:#e9e2d0;border-radius:99px;overflow:hidden}
+.progressbar i{display:block;height:100%;background:linear-gradient(90deg,var(--emerald),var(--gold));border-radius:99px;transition:width .5s}
+/* ---------- views ---------- */
+.view{display:none}
+.view.on{display:block;animation:fade .35s}
+@keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* ---------- lesson ---------- */
+.lesson-wrap{display:grid;grid-template-columns:280px 1fr;gap:28px;align-items:start}
+.curriculum{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:18px;position:sticky;top:86px;max-height:70vh;overflow:auto}
+.curriculum h4{margin-bottom:12px;font-size:16px}
+.cur-item{padding:10px 12px;border-radius:10px;font-size:14px;cursor:pointer;display:flex;gap:10px;align-items:center;color:var(--muted)}
+.cur-item:hover{background:#f3efe2}
+.cur-item.done{color:var(--emerald-d)}
+.cur-item.cur{background:#0d2137;color:#fff}
+.cur-item .n{width:26px;height:26px;border-radius:50%;background:#e9e2d0;color:var(--navy);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex:none}
+.cur-item.done .n{background:var(--emerald);color:#fff}
+.cur-item.cur .n{background:var(--gold);color:#231a05}
+.lesson-body{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:38px;box-shadow:var(--shadow)}
+.lesson-body h2{font-size:30px;margin-bottom:6px}
+.lesson-body .lmeta{color:var(--muted);font-size:14px;margin-bottom:22px}
+.lesson-body p{margin:0 0 16px;font-size:16.5px}
+.lesson-body blockquote{border-left:4px solid var(--gold);background:#fdf9ec;padding:16px 20px;border-radius:0 12px 12px 0;margin:20px 0;font-style:italic}
+.lesson-body h3{margin:26px 0 10px;font-size:21px}
+.lesson-body ul{margin:0 0 16px 22px}
+.lesson-body li{margin-bottom:8px}
+.lesson-nav{display:flex;justify-content:space-between;margin-top:30px;gap:12px;flex-wrap:wrap}
+/* ---------- quiz ---------- */
+.quiz-box{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:34px;box-shadow:var(--shadow);max-width:760px;margin:0 auto}
+.q{margin-bottom:26px;padding-bottom:22px;border-bottom:1px dashed var(--line)}
+.q:last-of-type{border:0}
+.q h4{font-size:17px;margin-bottom:12px}
+.opt{display:block;width:100%;text-align:left;background:#f7f4ea;border:2px solid var(--line);border-radius:12px;padding:12px 16px;margin:8px 0;font-size:15px;cursor:pointer;transition:.15s}
+.opt:hover{border-color:var(--gold)}
+.opt.sel{border-color:var(--navy);background:#eef3f9}
+.opt.right{border-color:var(--emerald);background:#e7f6ee}
+.opt.wrong{border-color:var(--red);background:#fdecea}
+.why{display:none;font-size:14px;background:#fdf9ec;border-radius:10px;padding:10px 14px;margin-top:8px;color:#6b5b23}
+.why.show{display:block}
+.score-hero{text-align:center;padding:20px}
+.score-ring{width:150px;height:150px;border-radius:50%;margin:0 auto 18px;display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:800;font-family:'Sora';color:#fff}
+/* ---------- dashboard ---------- */
+.dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.dcard{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)}
+.dcard h3{font-size:18px;margin-bottom:12px}
+/* ---------- certificate ---------- */
+.cert{background:#fffdf4;border:3px solid var(--gold);border-radius:8px;max-width:820px;margin:0 auto;padding:56px 48px;text-align:center;position:relative;box-shadow:var(--shadow)}
+.cert::before{content:"";position:absolute;inset:12px;border:1px solid var(--gold);border-radius:4px;pointer-events:none}
+.cert h1{font-size:40px;letter-spacing:3px;color:var(--navy)}
+.cert .cname{font-size:34px;font-family:'Sora';color:var(--emerald-d);margin:18px 0;border-bottom:2px solid var(--gold);display:inline-block;padding:0 30px 6px}
+/* ---------- pricing ---------- */
+.pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:stretch}
+.plan{background:#fff;border:2px solid var(--line);border-radius:20px;padding:34px 28px;text-align:center;display:flex;flex-direction:column;gap:14px;position:relative}
+.plan.hot{border-color:var(--gold);box-shadow:0 18px 50px rgba(212,164,55,.25);transform:scale(1.03)}
+.plan .tag{position:absolute;top:-15px;left:50%;transform:translateX(-50%);background:var(--gold);color:#231a05;font-weight:800;font-size:12px;padding:6px 18px;border-radius:99px;letter-spacing:1px}
+.plan h3{font-size:22px}
+.plan .amt{font-size:44px;font-weight:800;font-family:'Sora';color:var(--navy)}
+.plan ul{list-style:none;text-align:left;font-size:15px;color:var(--muted);flex:1}
+.plan li{margin:9px 0;padding-left:26px;position:relative}
+.plan li::before{content:"✓";position:absolute;left:0;color:var(--emerald);font-weight:800}
+/* ---------- misc ---------- */
+.feat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.feat{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px 22px;box-shadow:var(--shadow)}
+.feat .ic{font-size:34px;margin-bottom:12px}
+.feat h3{font-size:17px;margin-bottom:8px}
+.feat p{font-size:14px;color:var(--muted)}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.testi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:26px;box-shadow:var(--shadow)}
+.testi p{font-style:italic;font-size:15px;color:#3d4f63}
+.testi b{display:block;margin-top:14px;color:var(--navy)}
+.testi span{font-size:13px;color:var(--muted)}
+.faq{max-width:800px;margin:0 auto}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:12px;margin-bottom:12px;padding:18px 22px;cursor:pointer}
+.faq summary{font-weight:700;font-size:16px;color:var(--navy)}
+.faq p{margin-top:10px;color:var(--muted);font-size:15px}
+.instructor{display:grid;grid-template-columns:300px 1fr;gap:36px;align-items:center;background:var(--navy);color:#e8eef5;border-radius:24px;padding:44px;box-shadow:var(--shadow)}
+.instructor h2{color:#fff}
+.instructor h2 span{color:var(--gold)}
+.instructor p{color:#b9c8d8;margin:12px 0}
+.avatar{width:240px;height:240px;border-radius:50%;background:linear-gradient(135deg,var(--emerald),var(--navy2));display:flex;align-items:center;justify-content:center;font-size:90px;color:#fff;border:6px solid var(--gold);margin:0 auto}
+footer{background:var(--navy);color:#b9c8d8;padding:56px 0 26px;margin-top:40px}
+.fgrid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:30px;margin-bottom:36px}
+.fgrid h4{color:#fff;margin-bottom:14px;font-size:16px}
+.fgrid a{display:block;font-size:14px;margin:8px 0;cursor:pointer}
+.fgrid a:hover{color:var(--gold)}
+.copy{text-align:center;font-size:13px;border-top:1px solid rgba(255,255,255,.12);padding-top:22px}
+.toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--navy);color:#fff;padding:14px 26px;border-radius:12px;font-weight:600;z-index:99;transition:.3s;box-shadow:var(--shadow);max-width:90vw;text-align:center}
+.toast.show{transform:translateX(-50%)}
+.modal{position:fixed;inset:0;background:rgba(13,33,55,.7);display:none;align-items:center;justify-content:center;z-index:100;padding:20px}
+.modal.on{display:flex}
+.modal .box{background:#fff;border-radius:20px;padding:36px;max-width:480px;width:100%;box-shadow:var(--shadow)}
+.modal input,.modal select,.modal textarea{width:100%;border:2px solid var(--line);border-radius:12px;padding:13px 16px;font-size:15px;margin:8px 0;font-family:inherit}
+.modal input:focus,.modal select:focus{outline:none;border-color:var(--emerald)}
+.badge{display:inline-block;background:var(--gold);color:#231a05;font-size:11px;font-weight:800;letter-spacing:1px;padding:5px 14px;border-radius:99px;text-transform:uppercase}
+@media(max-width:960px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero h1{font-size:38px}
+  .cgrid,.dash-grid,.testi-grid,.pricing{grid-template-columns:1fr}
+  .feat-grid{grid-template-columns:1fr 1fr}
+  .lesson-wrap{grid-template-columns:1fr}
+  .curriculum{position:static;max-height:none}
+  .instructor{grid-template-columns:1fr;text-align:center}
+  .fgrid{grid-template-columns:1fr 1fr}
+  .navlinks{display:none;position:absolute;top:70px;left:0;right:0;background:var(--navy);flex-direction:column;padding:16px;gap:2px}
+  .navlinks.open{display:flex}
+  .hamb{display:block}
+}
+@media print{header,footer,.noprint{display:none!important}body{background:#fff}.cert{box-shadow:none;margin:0;max-width:100%}}
+</style>
+</head>
+<body>
+<header>
+  <div class="nav">
+    <div class="brand" onclick="go('home')">
+      <svg viewBox="0 0 64 64" fill="none"><path d="M8 44c10-2 16-8 20-16 2 8 8 14 16 16 8 2 12 8 12 8s-6-1-12 2c-8 4-18 4-26 0-4-2-8-4-10-10z" fill="#d4a437"/><path d="M28 28c4-10 12-16 24-18-2 8-8 16-16 20-4 2-8 2-8-2z" fill="#0e7c5b"/><circle cx="46" cy="14" r="3" fill="#fff"/></svg>
+      <div><div class="t1">SHAHEEN <span>ACADEMY</span></div><div class="t2">SOAR HIGHER · LEARN DEEPER</div></div>
+    </div>
+    <div class="navlinks" id="navlinks">
+      <button data-v="home" onclick="go('home')">Home</button>
+      <button data-v="courses" onclick="go('courses')">Courses</button>
+      <button data-v="dashboard" onclick="go('dashboard')">My Learning</button>
+      <button data-v="pricing" onclick="go('pricing')">Pricing</button>
+      <button data-v="about" onclick="go('about')">About</button>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <button class="btn btn-gold" style="padding:10px 20px" onclick="go('pricing')">Enroll Now</button>
+      <button class="hamb" onclick="document.getElementById('navlinks').classList.toggle('open')">☰</button>
+    </div>
+  </div>
+</header>
+<main id="app"></main>
+<footer>
+  <div class="container">
+    <div class="fgrid">
+      <div>
+        <h4>SHAHEEN ACADEMY</h4>
+        <p style="font-size:14px">شاہین اکیڈمی — Online courses in decision-making, psychology, Islamic studies, habits and student success. Learn at your pace, earn certificates, soar higher.</p>
+      </div>
+      <div><h4>Academy</h4><a onclick="go('courses')">All courses</a><a onclick="go('dashboard')">My learning</a><a onclick="go('pricing')">Pricing</a><a onclick="go('about')">About the instructor</a></div>
+      <div><h4>Popular courses</h4><a onclick="openCourse('decide-well')">Decide Well</a><a onclick="openCourse('word-of-mouth')">Word of Mouth</a><a onclick="openCourse('habits')">12 Powerful Habits</a><a onclick="openCourse('student-success')">Student Success</a></div>
+      <div><h4>Contact</h4><a>support@shaheenacademy.example</a><a>WhatsApp: +92-3XX-XXXXXXX</a><a onclick="go('about')">FAQ</a></div>
+    </div>
+    <div class="copy">© 2026 Shaheen Academy · Founded by Dr. S. Ahmad · All rights reserved.</div>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+<script>
+/* ============================================================
+   SHAHEEN ACADEMY — data, engine, views
+============================================================ */
+const COURSES = [
+/* ---------- COURSE 1 : DECIDE WELL ---------- */
+{id:"decide-well",title:"Decide Well: Master Your Decisions",cat:"Psychology",level:"All levels",dur:"6 hours",price:"PKR 2,500",free:false,grad:["#0e7c5b","#0d2137"],icon:"🧭",
+desc:"The flagship course from the bestselling book The Deciding Heart. Learn how psychology and Islamic guidance combine into a practical framework for true decisions — and how to escape the 8 traps that hijack your judgment.",
+lessons:[
+{t:"The Deciding Heart: Why Decisions Define Us",m:18,b:`<p>Every day you make around 35,000 decisions — most of them small, a few of them life-defining. The Qur'an treats decision-making as a moral act: <em>"...and consult them in the matter. And when you have decided, then rely upon Allah."</em> (Aal 'Imran 3:159).</p><p>Psychology agrees. Research on decision fatigue shows that the <strong>quality of your choices declines</strong> as the day wears on — judges grant parole less often before lunch, shoppers buy more impulsively when tired. Your brain is a decision machine with limited fuel.</p><h3>The three layers of a true decision</h3><ul><li><strong>Information</strong> — what do you actually know? (not what you fear)</li><li><strong>Consultation (shura)</strong> — who has walked this path before you?</li><li><strong>Resolution + trust (tawakkul)</strong> — decide firmly, then hand the outcome to Allah.</li></ul><blockquote>A decision is not a prediction of the future. It is a commitment in the present, made with the best knowledge you have, sealed with trust in Allah.</blockquote><p>In this course you will learn the 3:159 sequence in depth, meet the 8 traps of Chapter 12, and build a daily decision habit that compounds for life.</p>`},
+{t:"Trap 1 — Never Decide While You're Hot",m:15,b:`<p>Anger, excitement, infatuation, panic — every intense emotion <strong>narrows your thinking</strong> and inflates your confidence. Psychologists call it the "hot-cold empathy gap": the person you are in a hot state cannot accurately predict what the calm you would want.</p><p>The Prophet ﷺ said: <em>"Do not judge between two people while you are angry."</em> A 1,400-year-old decision rule, confirmed by modern labs.</p><h3>The 24-hour rule</h3><ul><li>Big decision + strong emotion = <strong>wait 24 hours</strong> before committing.</li><li>Write the decision down while hot; review it while cool.</li><li>Ask: "Would I choose this on an ordinary Tuesday morning?"</li></ul><blockquote>Emotions are data, not directors. Let them inform the meeting, never chair it.</blockquote>`},
+{t:"Trap 2 — The Crowd Is Not a Compass",m:16,b:`<p><em>"And if you obey most of those upon the earth, they will mislead you from the way of Allah."</em> (Al-An'am 6:116). A 2026 study in <em>Science Advances</em> confirmed what the verse warned: people follow the majority even when the majority is visibly wrong — the brain treats social consensus as evidence.</p><h3>How to use the crowd without obeying it</h3><ul><li><strong>Gather information</strong> from people — experiences, facts, warnings.</li><li><strong>Never outsource the verdict.</strong> Ten people telling you "everyone does it" is not a reason; it is peer pressure with better lighting.</li><li>Ask dissenters specifically: "What am I not seeing?"</li></ul><p>Shura (consultation) means collecting perspectives, not conducting a vote. The decision — and its accountability before Allah — remains yours.</p>`},
+{t:"Trap 5 — Procrastination With Prayer Beads",m:17,b:`<p>Some delays are wisdom. But there is a special kind of delay that <strong>dresses up as piety</strong>: endless istikhara without action, "waiting for a sign" for the tenth month, researching instead of deciding. The beads move; life doesn't.</p><p>The 3:159 sequence ends with <strong>'azm — firm resolve</strong>. Istikhara is a prayer for guidance <em>around</em> a decision, not a replacement for making one. A 2025 UBC study ("Power of Fewer Options") found that limiting options and setting a deadline dramatically improves both decision speed and satisfaction.</p><h3>The antidote</h3><ul><li>Set a <strong>decision deadline</strong> — "I will decide by Friday."</li><li>Reduce to 2–3 real options. More options don't help; they paralyze.</li><li>After istikhara and counsel: decide, act, trust.</li></ul><blockquote>Du'a opens the door. You still have to walk through it.</blockquote>`}
+],
+quiz:[
+{q:"What does the 'hot-cold empathy gap' mean?",o:["Hot weather makes people angry","Your emotional self can't predict what your calm self would want","Cold people decide better than warm people","Emotions have no effect on decisions"],a:1,w:"In a 'hot' emotional state, you misjudge what you'd choose calmly — which is why big decisions should wait 24 hours."},
+{q:"According to Aal 'Imran 3:159, what comes AFTER consultation?",o:["More consultation","Firm resolve, then trust in Allah","Waiting for a dream","Asking the crowd to vote"],a:1,w:"The verse gives the sequence: consult → decide firmly ('azm) → rely upon Allah (tawakkul)."},
+{q:"What is the difference between shura and polling?",o:["There is no difference","Shura collects perspectives; the decision stays yours","Polling is Islamic, shura is not","Shura means majority vote"],a:1,w:"Shura gathers counsel and information. Polling outsources the verdict to the majority — which 6:116 warns against."},
+{q:"'Procrastination with prayer beads' refers to…",o:["Praying too much","Delay disguised as piety — endless waiting for signs instead of deciding","Using beads for dhikr","Forgetting to pray"],a:1,w:"Istikhara guides a decision; it doesn't replace making one. Set a deadline and decide."},
+{q:"The 24-hour rule applies when…",o:["Every small daily choice","A big decision meets a strong emotion","Only financial decisions","Only when others disagree"],a:1,w:"Big decision + hot emotion = wait 24 hours. Write it hot, review it cool."}
+]},
+/* ---------- COURSE 2 : WORD OF MOUTH ---------- */
+{id:"word-of-mouth",title:"Word of Mouth: Speak to Build",cat:"Relationships",level:"All levels",dur:"5 hours",price:"PKR 2,000",free:false,grad:["#2471a3","#0d2137"],icon:"💬",
+desc:"From the book Word of Mouth: how the words we speak build — or break — the bonds that hold us together. Gossip, listening, praise, apology and repair, through psychology and Islamic teachings.",
+lessons:[
+{t:"Words Build or Break: The Physics of Speech",m:15,b:`<p>The Prophet ﷺ said: <em>"Whoever believes in Allah and the Last Day, let him speak good or remain silent."</em> Modern psychology has caught up: Dr. John Gottman's lab can predict divorce with over 90% accuracy just by <strong>counting the ratio of positive to negative words</strong> between partners. Stable couples average 5 positive interactions for every negative one.</p><h3>Speech has weight</h3><ul><li>Words <strong>create reality</strong> — "you always" and "you never" rewrite history.</li><li>Words <strong>compound</strong> — small daily kindnesses build what grand gestures can't.</li><li>Words <strong>scar</strong> — the brain stores verbal wounds like physical ones.</li></ul><blockquote>Every conversation is a construction site. You are either building the relationship or demolishing it — there is no neutral.</blockquote>`},
+{t:"Gossip & Backbiting: The Social Poison",m:16,b:`<p>The Qur'an compares backbiting to <em>"eating the flesh of your dead brother"</em> (Al-Hujurat 49:12) — one of the most visceral images in revelation. Why so severe? Because gossip <strong>destroys trust at scale</strong>: the listener learns two things — something bad about the absent person, and that <em>you</em> talk about absent people.</p><h3>The 3-question filter (before repeating anything)</h3><ul><li>Is it <strong>true</strong>? (most gossip fails here)</li><li>Is it <strong>kind</strong>?</li><li>Is it <strong>necessary</strong> — would the person benefit from hearing it from you directly?</li></ul><p>Fail any one → don't say it. And when others gossip to you: <strong>don't relay, don't reward</strong> — change the subject or defend the absent person. That single habit will make you the most trusted person in every room.</p>`},
+{t:"Listen Deeply: The Rarest Gift",m:14,b:`<p>Most people don't listen — they <strong>reload</strong>. While you speak, they're preparing their reply. Psychologist Carl Rogers found that feeling "deeply heard" is itself therapeutic; the speaker's stress hormones drop when the listener is fully present.</p><h3>Deep listening in 4 moves</h3><ul><li><strong>Pause</strong> — let 3 seconds of silence sit after they finish. Don't rush to fill it.</li><li><strong>Mirror</strong> — "It sounds like you felt dismissed when…" (name the emotion).</li><li><strong>Ask, don't advise</strong> — "What do you think you need here?" Advice is cheap; understanding is rare.</li><li><strong>Remember</strong> — follow up next week. Remembered details are proof of love.</li></ul><blockquote>People will forget what you said. They will never forget how heard you made them feel.</blockquote>`},
+{t:"Repair: The Art of the Real Apology",m:15,b:`<p>Gottman's research found it's not the absence of conflict that predicts lasting bonds — it's the presence of <strong>repair</strong>. Couples who repair well can fight often and stay close. Couples who can't, drift.</p><h3>A real apology has 4 parts</h3><ul><li><strong>Name it specifically</strong> — "I was wrong to raise my voice," not "sorry if you felt bad."</li><li><strong>Own it fully</strong> — no "but you…" in the same sentence.</li><li><strong>Show the impact you understand</strong> — "I can see that made you feel small."</li><li><strong>State the change</strong> — "Next time I'll pause before answering."</li></ul><p>In Islam, apologizing to people is inseparable from repentance to Allah — rights of people (<em>huquq al-'ibad</em>) aren't forgiven until the person forgives. Repair quickly, repair completely.</p>`}
+],
+quiz:[
+{q:"Gottman's lab predicts relationship survival mainly by…",o:["How often couples fight","The ratio of positive to negative words","How long they've been together","Shared hobbies"],a:1,w:"Stable couples average ~5 positive interactions per negative one. It's the ratio, not the absence of conflict."},
+{q:"Why does the Qur'an compare backbiting to eating a dead brother's flesh?",o:["It's just a metaphor with no lesson","To show how severely it destroys trust and dignity","Because gossip is unhealthy","To ban meat"],a:1,w:"Al-Hujurat 49:12 uses the visceral image to show backbiting's severity — it devours someone's honor behind their back."},
+{q:"The 3-question filter before repeating something about a person:",o:["True, funny, interesting","True, kind, necessary","Loud, clear, fast","Old, new, borrowed"],a:1,w:"True, kind, necessary — fail any one and don't say it."},
+{q:"Deep listening means…",o:["Preparing your reply while they talk","Pausing, mirroring emotion, asking not advising","Nodding quickly to finish faster","Multitasking politely"],a:1,w:"Pause, mirror the emotion, ask instead of advise, and follow up later."},
+{q:"A real apology must NOT include…",o:["Naming the specific wrong","Owning it fully","'But you…' in the same sentence","Stating the change"],a:2,w:"'Sorry, but you…' cancels the apology. Own it fully, then state the change."}
+]},
+/* ---------- COURSE 3 : 12 POWERFUL HABITS ---------- */
+{id:"habits",title:"12 Powerful Habits for Life",cat:"Self-Development",level:"Beginner",dur:"4 hours",price:"Free",free:true,grad:["#d4a437","#7a5c14"],icon:"🔥",
+desc:"The complete habit system from the Powerful Habits planner: rise early, exercise, read, plan, eat with intention, speak with purpose, listen deeply, gratitude, help one person, learn, reflect, sleep. With daily, weekly and monthly trackers.",
+lessons:[
+{t:"The Habit Loop: How Behavior Becomes Automatic",m:14,b:`<p>A 2025 study by Rebar, Gardner & Vincent found that roughly <strong>65% of daily actions run on autopilot</strong> — habits, not decisions. Your life is not shaped by what you intend; it's shaped by what you repeat.</p><h3>The loop</h3><ul><li><strong>Cue</strong> — the trigger (alarm, location, time, emotion)</li><li><strong>Routine</strong> — the behavior itself</li><li><strong>Reward</strong> — the payoff your brain remembers</li></ul><p>To build a habit: make the cue obvious, the routine easy, the reward satisfying. To break one: invert it — hide the cue, add friction, remove the reward.</p><blockquote>You don't rise to your goals. You fall to your habits.</blockquote>`},
+{t:"The First Four: Rise, Move, Read, Plan",m:15,b:`<p>Habits 1–4 form the <strong>morning foundation</strong>. Win the first two hours and the day follows.</p><ul><li><strong>1. Rise early</strong> — Fajr-anchored mornings beat alarm-snoozed ones. The Prophet ﷺ made du'a for blessing in the early hours (<em>barakah fi bukuriha</em>).</li><li><strong>2. Exercise</strong> — 20 minutes. Not for the body you want in a year; for the brain you need today. Movement is the fastest legal mood drug.</li><li><strong>3. Read</strong> — 10 pages. Readers compound knowledge like investors compound money.</li><li><strong>4. Plan</strong> — 5 minutes: top 3 priorities on paper. A planned day resists other people's agendas.</li></ul><blockquote>Stack them: after Fajr → exercise → read → plan. One cue chain, four habits.</blockquote>`},
+{t:"The Middle Four: Eat, Speak, Listen, Thank",m:14,b:`<ul><li><strong>5. Eat with intention</strong> — slow down, no screens, gratitude before the first bite. Your body is an amanah (trust).</li><li><strong>6. Speak with purpose</strong> — before speaking, ask: true? kind? necessary? (see the Word of Mouth course).</li><li><strong>7. Listen deeply</strong> — one conversation a day where you listen more than you talk.</li><li><strong>8. Gratitude</strong> — write 3 specific gratitudes nightly. <em>"If you are grateful, I will surely increase you"</em> (Ibrahim 14:7) — and psychology confirms grateful people sleep better and stress less.</li></ul><p>These four govern your <strong>inputs and outputs</strong>: what enters your body, what leaves your mouth, what enters your ears, what fills your heart.</p>`},
+{t:"The Final Four: Help, Learn, Reflect, Sleep",m:15,b:`<ul><li><strong>9. Help one person</strong> — daily, deliberately, without announcing it. Service rewires self-focus into purpose.</li><li><strong>10. Learn</strong> — one new idea a day. A 15-minute lesson (like this academy!) compounds to 90+ hours a year.</li><li><strong>11. Reflect</strong> — 5 minutes nightly: what went well? what will I fix tomorrow? The unexamined day repeats itself.</li><li><strong>12. Sleep</strong> — 7–8 hours, protected like an appointment. Sleep debt charges interest on every other habit.</li></ul><h3>The 30-day challenge</h3><p>Don't start all 12. Pick <strong>3</strong>, track them daily for 30 days, then add 3 more. The planner's weekly and monthly trackers exist for exactly this. Slow is smooth; smooth becomes permanent.</p>`}
+],
+quiz:[
+{q:"Roughly what share of daily actions run on autopilot?",o:["About 10%","About 35%","About 65%","About 95%"],a:2,w:"Research (Rebar, Gardner & Vincent 2025) puts it near 65% — habits, not decisions, run your day."},
+{q:"The three parts of the habit loop are…",o:["Goal, plan, reward","Cue, routine, reward","Wish, work, win","Trigger, struggle, triumph"],a:1,w:"Cue → routine → reward. Design all three deliberately."},
+{q:"Habit stacking means…",o:["Doing 12 habits at once","Chaining a new habit onto an existing routine","Stacking books on habits","Skipping habits weekly"],a:1,w:"After Fajr → exercise → read → plan: one cue chain carries four habits."},
+{q:"Why start with only 3 habits in the 30-day challenge?",o:["The other 9 don't matter","Small wins compound; overload kills consistency","It's faster","Habits can't be tracked"],a:1,w:"Slow is smooth, smooth becomes permanent. Master 3, then add more."},
+{q:"Which habit protects all the others?",o:["Reading","Gratitude","Sleep","Planning"],a:2,w:"Sleep debt charges interest on every other habit — protect 7–8 hours like an appointment."}
+]},
+/* ---------- COURSE 4 : THE ISLAMIC MIND ---------- */
+{id:"islamic-mind",title:"The Islamic Mind: Psychology & Soul",cat:"Islamic Studies",level:"Intermediate",dur:"6 hours",price:"PKR 2,500",free:false,grad:["#0a5f45","#0d2137"],icon:"🌙",
+desc:"Where classical Islamic scholarship meets modern psychology: the levels of the nafs, the heart (qalb), intentions, anxiety and waswasa, gratitude and contentment — a complete map of the inner life.",
+lessons:[
+{t:"The Three Levels of the Nafs",m:16,b:`<p>The Qur'an describes the self (<em>nafs</em>) at three stations:</p><ul><li><strong>Nafs al-ammarah</strong> — the commanding self, prone to evil (Yusuf 12:53). The impulsive, desire-driven mode. Modern psychology calls it System 1 on overdrive.</li><li><strong>Nafs al-lawwamah</strong> — the self-reproaching self (Al-Qiyamah 75:2). The conscience that stings after wrongdoing. This is moral development in motion.</li><li><strong>Nafs al-mutma'innah</strong> — the tranquil self (Al-Fajr 89:27). At peace through remembrance. The goal of the entire journey.</li></ul><blockquote>Spiritual growth is the migration from ammarah → lawwamah → mutma'innah. Every habit in this academy is a step on that road.</blockquote><p>Practical: when you catch yourself in ammarah mode (impulse), don't despair — the fact that your lawwamah noticed means you're already climbing.</p>`},
+{t:"The Qalb: Your Heart Is the Command Center",m:15,b:`<p><em>"Truly, in the body there is a morsel of flesh — if it is sound, the whole body is sound… it is the heart."</em> (Bukhari & Muslim). Fourteen centuries before neuroscience, the Prophet ﷺ placed the heart at the center of human function.</p><p>Modern research agrees the heart and brain are in constant two-way communication (heart-rate variability science). Chronic resentment, envy and anxiety don't just "feel bad" — they dysregulate the nervous system.</p><h3>Heart hygiene — daily</h3><ul><li><strong>Morning:</strong> set intention (niyyah) — "Why am I doing today?"</li><li><strong>Evening:</strong> muhasaba — audit the heart: grudges? envy? unspoken thanks?</li><li><strong>Constant:</strong> dhikr — <em>"in the remembrance of Allah do hearts find rest"</em> (Ar-Ra'd 13:28).</li></ul>`},
+{t:"Anxiety, Waswasa & the Whispering Mind",m:17,b:`<p>Not every anxious thought is a divine warning. The Qur'an distinguishes: Yusuf 12:53 warns that the nafs inclines to evil — but intrusive, looping, catastrophic thoughts are often <strong>waswasa</strong> (whispering), not revelation.</p><h3>The 2026 source test (intuition vs anxiety)</h3><ul><li><strong>Anxiety</strong> is loud, urgent, catastrophic, and loops. It demands action NOW.</li><li><strong>Genuine intuition</strong> is quiet, calm, and specific. It doesn't panic.</li><li><strong>Waswasa</strong> attacks precisely what you love most — faith, family, purity — because that's where doubt hurts.</li></ul><p>Response protocol: name it ("this is waswasa, not fact"), seek refuge (<em>a'udhu billah</em>), delay action 24 hours, and talk to a trusted person. <strong>Never make life decisions inside an anxiety spike</strong> — see the Decide Well course.</p>`},
+{t:"Shukr & Qana'ah: Gratitude and Contentment",m:14,b:`<p><em>"If you are grateful, I will surely increase you"</em> (Ibrahim 14:7). Gratitude (<em>shukr</em>) is the only worship Allah promises to <strong>increase</strong> in return. <em>Qana'ah</em> (contentment) is its twin: wanting what you have, not just having what you want.</p><p>Psychology's gratitude research (Emmons & McCullough onwards) finds the same: regular gratitude practice improves sleep, immunity, relationships and life satisfaction — the most replicated finding in positive psychology.</p><h3>The nightly 3×3</h3><ul><li>3 things you're grateful for (specific, not generic)</li><li>3 things you did well today</li><li>3 people you'll make du'a for</li></ul><blockquote>Comparison is the thief of qana'ah. Curate your inputs — the feed you scroll is the heart you grow.</blockquote>`}
+],
+quiz:[
+{q:"The three Qur'anic levels of the nafs in ascending order:",o:["Mutma'innah, lawwamah, ammarah","Ammarah, lawwamah, mutma'innah","Lawwamah, ammarah, mutma'innah","Ammarah, mutma'innah, lawwamah"],a:1,w:"Ammarah (commanding) → lawwamah (reproaching) → mutma'innah (tranquil). Growth is the climb."},
+{q:"'In the remembrance of Allah do hearts find rest' is from…",o:["Al-Fatihah","Ar-Ra'd 13:28","Al-Ikhlas","Yusuf 12:53"],a:1,w:"Ar-Ra'd 13:28 — dhikr as the heart's rest is both revelation and neuroscience."},
+{q:"How do you tell anxiety apart from genuine intuition?",o:["Anxiety is quieter","Anxiety is loud, urgent, looping; intuition is calm and specific","They are identical","Intuition is always wrong"],a:1,w:"The 2026 source test: loud+urgent+catastrophic = anxiety. Quiet+calm+specific = intuition worth hearing."},
+{q:"Waswasa typically attacks…",o:["Things you don't care about","What you love most — faith, family, purity","Strangers","Your finances only"],a:1,w:"Waswasa targets where doubt hurts most. Name it, seek refuge, delay action."},
+{q:"Allah promises to increase which act of worship in return?",o:["Fasting","Gratitude (shukr)","Hajj","Charity"],a:1,w:"'If you are grateful, I will surely increase you' (Ibrahim 14:7) — gratitude is the worship with a guaranteed return."}
+]},
+/* ---------- COURSE 5 : STUDENT SUCCESS ---------- */
+{id:"student-success",title:"Student Success: Study Smarter",cat:"Education",level:"Teens & college",dur:"4 hours",price:"Free",free:true,grad:["#2471a3","#12304f"],icon:"🎓",
+desc:"From a career educationist: the science of learning — active recall, spaced repetition, time management, exam strategy and the mindset that turns effort into results. For Matric, FSc, university and competitive exams.",
+lessons:[
+{t:"How Memory Really Works (and Why Rereading Fails)",m:14,b:`<p>Rereading feels productive and accomplishes almost nothing. Cognitive science calls it the <strong>fluency illusion</strong>: familiar text feels "known," but familiarity is not recall. Exams test recall, not recognition.</p><h3>What actually builds memory</h3><ul><li><strong>Active recall</strong> — close the book and retrieve. Every retrieval strengthens the memory trace.</li><li><strong>Spaced repetition</strong> — review at expanding intervals (1 day, 3 days, 7 days, 14 days). Cramming evaporates; spacing endures.</li><li><strong>Elaboration</strong> — explain the idea in your own words, connect it to what you know.</li></ul><blockquote>Study like the exam is tomorrow and the degree depends on it — because the method, not the hours, decides the grade.</blockquote>`},
+{t:"The Study System: Plan, Focus, Review",m:15,b:`<ul><li><strong>Plan weekly, not daily.</strong> Sunday evening: map every subject's tasks for the week. A week without a plan belongs to distractions.</li><li><strong>Focus in sprints.</strong> 50 minutes deep work + 10 minutes break (phone in another room). Multitasking is a myth — task-switching costs up to 40% of productive time.</li><li><strong>Review nightly.</strong> 15 minutes: what did I learn today? One page of recall notes per subject.</li></ul><h3>The past-paper rule</h3><p>For board exams (Matric/FSc), <strong>50% of prep time goes to past papers</strong> under timed conditions. Examiners repeat patterns; past papers reveal them. Mark schemes teach you what earns marks — study those, not just textbooks.</p>`},
+{t:"Exam Day: Strategy Over Panic",m:13,b:`<ul><li><strong>Read the whole paper first</strong> (5 min). Start with your strongest section — early wins calm nerves.</li><li><strong>Allocate by marks.</strong> A 10-mark question deserves double the time of a 5-mark one. Students routinely invert this.</li><li><strong>Write for the examiner.</strong> Headings, diagrams, labeled steps. Examiners scan; make their job easy and they reward you.</li><li><strong>Never leave blanks.</strong> A structured attempt earns partial marks; an empty page earns zero.</li></ul><blockquote>Exams don't measure your worth. They measure your preparation meeting a strategy. Bring both.</blockquote>`},
+{t:"Mindset: The Inner Game of Grades",m:14,b:`<p>Carol Dweck's growth-mindset research: students who believe ability <strong>grows with effort</strong> outperform those who believe it's fixed — same brains, different story about themselves.</p><ul><li>Replace "I'm bad at math" with "I haven't mastered math <em>yet</em>."</li><li>Treat every low mark as <strong>data</strong>: which topic? which error type? Fix the pattern, not just the paper.</li><li>Protect sleep before exams — an all-nighter borrows tomorrow's brain at loan-shark rates.</li><li>Make du'a, then tie your camel: trust Allah <em>after</em> full effort, not instead of it.</li></ul>`}
+],
+quiz:[
+{q:"Why does rereading feel effective but fail?",o:["Books are boring","The fluency illusion — familiarity feels like knowledge","Exams are unfair","Teachers don't explain"],a:1,w:"Familiar text feels 'known,' but exams test recall, not recognition. Close the book and retrieve instead."},
+{q:"The ideal review spacing is…",o:["All in one night","Expanding intervals: 1, 3, 7, 14 days","Once a month","Never review"],a:1,w:"Spaced repetition beats cramming — each spaced retrieval strengthens the trace."},
+{q:"For board exams, what share of prep should go to past papers?",o:["About 10%","About 25%","About 50%","100%"],a:2,w:"Half your prep under timed past-paper conditions — examiners repeat patterns."},
+{q:"On exam day, start with…",o:["The hardest question","Your strongest section","Question 1 in order","The last page"],a:1,w:"Early wins calm nerves and bank marks. Read the whole paper first, then attack strengths."},
+{q:"A growth mindset means believing…",o:["Grades don't matter","Ability grows with effort","You're naturally gifted","Exams are luck"],a:1,w:"Dweck's research: 'not yet' beats 'I can't' — same brain, better story, better results."}
+]},
+/* ---------- COURSE 6 : EMOTIONAL STRENGTH ---------- */
+{id:"emotional-strength",title:"Emotional Strength & Resilience",cat:"Psychology",level:"All levels",dur:"5 hours",price:"PKR 2,000",free:false,grad:["#8e44ad","#0d2137"],icon:"💪",
+desc:"Understand your emotions instead of being ruled by them: anger management the Prophetic way, stress science, resilience, confidence and the psychology of bouncing back — grounded in Islam and evidence.",
+lessons:[
+{t:"Name It to Tame It: Emotional Literacy",m:14,b:`<p>Psychologist Lisa Feldman Barrett's research: people who can <strong>precisely name</strong> their emotions ("I feel disrespected," not just "I feel bad") regulate them far better. Granularity is power.</p><ul><li>Expand beyond "happy/sad/angry": disappointed, overlooked, anxious, drained, hopeful…</li><li><strong>Journal the trigger:</strong> what happened → what I felt → what I did. Patterns emerge in a week.</li><li>Emotions are <strong>signals, not orders</strong>. Anger signals a boundary crossed; sadness signals a loss. Hear the signal, choose the response.</li></ul><blockquote>Between stimulus and response there is a space — and in that space lives your freedom.</blockquote>`},
+{t:"Anger: The Prophetic Protocol",m:16,b:`<p>Anger itself isn't the sin — <strong>uncontrolled</strong> anger is. The Prophet ﷺ gave a complete anger protocol 14 centuries before anger-management therapy:</p><ul><li><strong>Seek refuge:</strong> <em>"A'udhu billahi min ash-shaytan ir-rajim"</em> — naming the spiritual dimension first.</li><li><strong>Change posture:</strong> standing → sit; sitting → lie down. Physiology first: you cannot rage lying down.</li><li><strong>Cool the body:</strong> make wudu — "anger is from fire, and water extinguishes fire."</li><li><strong>Go silent:</strong> <em>"When one of you is angry, let him be silent."</em> Silence is the cheapest damage control ever invented.</li></ul><p>Modern CBT teaches the same sequence: interrupt physiology, then reappraise. Revelation got there first.</p>`},
+{t:"Stress Science: Pressure vs Panic",m:15,b:`<p>Not all stress is harmful. The Yerkes-Dodson curve: <strong>moderate pressure improves performance</strong>; only overload breaks it. The goal isn't zero stress — it's the right dose, with recovery.</p><ul><li><strong>Separate</strong> what you control from what you don't. Worry the first list; release the second (tawakkul).</li><li><strong>Move daily</strong> — exercise metabolizes stress hormones directly.</li><li><strong>Sleep 7–8 hours</strong> — the stressed brain that skips sleep is borrowing from tomorrow's resilience.</li><li><strong>Talk early</strong> — to Allah in du'a, to a trusted person, to a counselor. Buried stress compounds.</li></ul><blockquote>Allah does not burden a soul beyond what it can bear (2:286). The load is bearable — the <em>carrying method</em> is what needs fixing.</blockquote>`},
+{t:"Resilience: Bouncing Forward",m:15,b:`<p>Resilience isn't toughness — it's <strong>recovery speed</strong>. Research on resilient people finds three habits:</p><ul><li><strong>Meaning-making:</strong> "What is this teaching me?" Victims ask "why me?"; growers ask "what now?"</li><li><strong>Micro-wins:</strong> after a setback, do one small controllable thing today. Momentum beats motivation.</li><li><strong>Connection:</strong> resilient people ask for help early. Isolation is the real enemy, not the problem itself.</li></ul><p>Islam frames hardship as <strong>purification and elevation</strong>, not punishment: <em>"Indeed, with hardship comes ease"</em> (94:6) — note: <em>with</em>, not <em>after</em>. The ease is already traveling alongside.</p>`}
+],
+quiz:[
+{q:"Why does precisely naming an emotion help?",o:["It impresses people","Granularity improves regulation — 'name it to tame it'","It makes emotions stronger","It has no effect"],a:1,w:"Barrett's research: precise emotional labels give the brain better regulation options."},
+{q:"The Prophetic anger protocol includes all EXCEPT…",o:["Seeking refuge from Shaytan","Changing posture","Making wudu","Shouting to release it"],a:3,w:"A'udhu billah, sit/lie down, wudu, silence — never venting. Venting rehearses rage."},
+{q:"The Yerkes-Dodson curve teaches…",o:["All stress is bad","Moderate pressure improves performance; overload harms","Stress is imaginary","Only athletes need pressure"],a:1,w:"The goal is the right dose of pressure with recovery — not zero stress."},
+{q:"Resilience is best defined as…",o:["Never feeling pain","Recovery speed after setbacks","Avoiding all problems","Being the toughest person"],a:1,w:"Resilience = how fast you recover and grow, built via meaning, micro-wins, connection."},
+{q:"'Indeed, with hardship comes ease' (94:6) — the key word is…",o:["After","With — ease travels alongside hardship","Instead","Never"],a:1,w:"WITH, not after. The ease is already on the road beside the hardship."}
+]}
+];
+/* ============================================================
+   ENGINE
+============================================================ */
+const $=s=>document.querySelector(s);
+const store={
+  get(){try{return JSON.parse(localStorage.getItem("shaheen_v1"))||{}}catch(e){return{}}},
+  set(d){localStorage.setItem("shaheen_v1",JSON.stringify(d))}
+};
+let S=store.get(); // {enrolled:{cid:true}, done:{cid:[lidx]}, quiz:{cid:{lidx:score}}, name:""}
+function save(){store.set(S)}
+function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("show");setTimeout(()=>t.classList.remove("show"),2600)}
+function courseById(id){return COURSES.find(c=>c.id===id)}
+function enrolled(id){return !!(S.enrolled&&S.enrolled[id])||courseById(id).free}
+function doneLessons(id){return (S.done&&S.done[id])||[]}
+function pct(id){const c=courseById(id);return Math.round(doneLessons(id).length/c.lessons.length*100)}
+function go(v){document.querySelectorAll(".navlinks button").forEach(b=>b.classList.toggle("active",b.dataset.v===v));VIEWS[v]();window.scrollTo({top:0});document.getElementById('navlinks').classList.remove('open')}
+function openCourse(id){VIEWS.course(id);window.scrollTo({top:0})}
+function openLesson(cid,li){VIEWS.lesson(cid,li);window.scrollTo({top:0})}
+function openQuiz(cid,li){VIEWS.quiz(cid,li);window.scrollTo({top:0})}
+/* ============================================================
+   VIEWS
+============================================================ */
+const VIEWS={
+home(){
+$("#app").innerHTML=`
+<div class="view on">
+<section class="hero"><div class="container hero-inner">
+  <div>
+    <span class="badge">Admissions open · 2026</span>
+    <h1 style="margin-top:14px">Soar Higher.<br><span class="gold">Learn Deeper.</span></h1>
+    <p class="sub">Shaheen Academy brings world-class courses in decision-making, psychology, Islamic studies, habits and student success — taught by Dr. S. Ahmad, built for Pakistan and the world.</p>
+    <div class="hero-cta">
+      <button class="btn btn-gold" onclick="go('courses')">Explore Courses</button>
+      <button class="btn btn-ghost" onclick="go('dashboard')">My Learning</button>
+    </div>
+    <div class="searchbar"><input id="hq" placeholder="Search courses — try 'decision', 'habits', 'psychology'…"><button onclick="searchGo()">Search</button></div>
+  </div>
+  <div class="hero-card">
+    <h3>Why Shaheen flies higher</h3>
+    <div class="statgrid">
+      <div class="stat"><b>6</b><span>Expert courses</span></div>
+      <div class="stat"><b>24</b><span>Rich lessons</span></div>
+      <div class="stat"><b>30</b><span>Quiz questions</span></div>
+      <div class="stat"><b>100%</b><span>Self-paced</span></div>
+    </div>
+    <p style="margin-top:16px;font-size:14px;color:#b9c8d8">Psychology <em>and</em> Islamic guidance — a combination no other platform offers.</p>
+  </div>
+</div></section>
+<section><div class="container">
+  <span class="kicker">Featured courses</span>
+  <h2 class="stitle">Start with the bestsellers</h2>
+  <p class="ssub">Flagship programs drawn from Dr. S. Ahmad's published books — the same frameworks thousands of readers already trust.</p>
+  <div class="cgrid">${COURSES.slice(0,3).map(cardHTML).join("")}</div>
+  <div style="text-align:center;margin-top:30px"><button class="btn btn-em" onclick="go('courses')">View all courses →</button></div>
+</div></section>
+<section style="background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line)"><div class="container">
+  <span class="kicker">The Shaheen difference</span>
+  <h2 class="stitle">More than videos. A complete learning system.</h2>
+  <p class="ssub">Khan Academy gives you videos. Coursera gives you lectures. Shaheen gives you transformation — every course pairs knowledge with practice.</p>
+  <div class="feat-grid">
+    <div class="feat"><div class="ic">🧠</div><h3>Psychology + Islam</h3><p>Every concept grounded in both modern research and Qur'anic wisdom. Two lenses, one truth.</p></div>
+    <div class="feat"><div class="ic">✍️</div><h3>Quizzes that teach</h3><p>30 expert questions with instant explanations — you don't just get scored, you get smarter.</p></div>
+    <div class="feat"><div class="ic">📈</div><h3>Progress that sticks</h3><p>Your learning dashboard tracks every lesson and quiz. Pick up exactly where you left off.</p></div>
+    <div class="feat"><div class="ic">🎓</div><h3>Certificates</h3><p>Complete a course and earn a printable certificate with your name on it.</p></div>
+  </div>
+</div></section>
+<section><div class="container">
+  <div class="instructor">
+    <div><div class="avatar">SA</div></div>
+    <div>
+      <span class="badge">Your instructor</span>
+      <h2 style="margin-top:12px">Dr. S. Ahmad <span>— Educationist, Psychologist, Islamic Scholar</span></h2>
+      <p>Author of <em>The Deciding Heart</em> and <em>Word of Mouth</em>, mentor to students and professionals across Pakistan. Two decades in education, psychology and Islamic scholarship — distilled into courses you can finish in a weekend and use for a lifetime.</p>
+      <button class="btn btn-gold" onclick="go('about')">More about your instructor →</button>
+    </div>
+  </div>
+</div></section>
+<section><div class="container">
+  <span class="kicker">Learners say</span><h2 class="stitle">Stories from the nest</h2><p class="ssub">Sample testimonials — real ones will appear here as our first cohorts graduate.</p>
+  <div class="testi-grid">
+    <div class="testi"><p>"The Decide Well framework ended six months of paralysis over my career move. The 3:159 sequence is now taped to my wall."</p><b>Ayesha K.</b><span>Lahore · Decide Well graduate</span></div>
+    <div class="testi"><p>"I bought it for the psychology but stayed for the Islamic wisdom. The nafs levels lesson changed how I see my own struggles."</p><b>Bilal R.</b><span>Karachi · Islamic Mind graduate</span></div>
+    <div class="testi"><p>"My FSc prep finally has a system. Past-paper rule + spaced repetition took me from 78% to 91% in three months."</p><b>Fatima S.</b><span>Islamabad · Student Success graduate</span></div>
+  </div>
+</div></section>
+<section style="background:var(--navy);color:#fff;text-align:center">
+  <div class="container">
+    <h2 style="color:#fff;font-size:34px">Your wings are ready.<br><span style="color:var(--gold)">Time to fly.</span></h2>
+    <p style="color:#b9c8d8;margin:14px 0 26px">Join Shaheen Academy today — free courses open now, premium from just PKR 2,000.</p>
+    <button class="btn btn-gold" onclick="go('courses')">Start Learning Free</button>
+  </div>
+</section>
+</div>`;},
+courses(q){
+const list=q?COURSES.filter(c=>(c.title+c.desc+c.cat).toLowerCase().includes(q.toLowerCase())):COURSES;
+$("#app").innerHTML=`<div class="view on"><section><div class="container">
+<span class="kicker">Course catalog</span><h2 class="stitle">All courses</h2>
+<p class="ssub">${list.length} course${list.length!==1?"s":""}${q?` matching "<b>${q}</b>"`:""} · Free and premium · Self-paced · Certificates included</p>
+<div class="cgrid">${list.map(cardHTML).join("")||"<p>No courses match your search.</p>"}</div>
+</div></section></div>`;},
+course(id){
+const c=courseById(id),dl=doneLessons(id),isE=enrolled(id);
+$("#app").innerHTML=`<div class="view on"><section><div class="container">
+<button class="btn btn-ghost noprint" style="color:var(--navy);background:#eef3f7;margin-bottom:20px" onclick="go('courses')">← All courses</button>
+<div class="lesson-wrap">
+<div class="lesson-body" style="grid-column:1/-1">
+  <div class="cbanner" style="background:linear-gradient(135deg,${c.grad[0]},${c.grad[1]});border-radius:14px;margin:-38px -38px 24px;padding:34px"><div style="font-size:52px">${c.icon}</div><h2 style="color:#fff;font-size:32px;margin-top:8px">${c.title}</h2>
+  <div class="cmeta" style="margin-top:10px"><span class="pill">${c.cat}</span><span class="pill">${c.level}</span><span class="pill">${c.dur}</span><span class="pill ${c.free?"free":""}">${c.free?"FREE":c.price}</span></div></div>
+  <p style="font-size:17px">${c.desc}</p>
+  ${!isE?`<div style="background:#fdf9ec;border:2px dashed var(--gold);border-radius:14px;padding:22px;margin:22px 0;text-align:center"><b>Enroll to unlock all ${c.lessons.length} lessons + quizzes + certificate.</b><br><br><button class="btn btn-gold" onclick="enroll('${c.id}')">Enroll — ${c.price}</button></div>`:`<div style="background:#e7f6ee;border-radius:14px;padding:16px 22px;margin:22px 0;color:var(--emerald-d);font-weight:600">✓ Enrolled — ${pct(id)}% complete</div><div class="progressbar" style="margin:-12px 0 22px"><i style="width:${pct(id)}%"></i></div>`}
+  <h3>Curriculum — ${c.lessons.length} lessons</h3>
+  <div style="margin-top:14px">${c.lessons.map((l,i)=>`
+    <div class="cur-item ${dl.includes(i)?"done":""}" onclick="${isE?`openLesson('${c.id}',${i})`:`enroll('${c.id}')`}" style="border:1px solid var(--line);margin-bottom:8px">
+      <span class="n">${dl.includes(i)?"✓":i+1}</span>
+      <div style="flex:1"><b>${l.t}</b><div style="font-size:12px">${l.m} min · Lesson ${i+1} + quiz</div></div>
+      ${!isE?'<span style="font-size:18px">🔒</span>':""}
+    </div>`).join("")}</div>
+  ${isE&&pct(id)===100?`<div style="text-align:center;margin-top:26px"><button class="btn btn-gold" onclick="VIEWS.certificate('${c.id}')">🎓 Get My Certificate</button></div>`:""}
+</div></div></div></section></div>`;},
+lesson(cid,li){
+const c=courseById(cid),l=c.lessons[li],dl=doneLessons(cid);
+const done=dl.includes(li);
+$("#app").innerHTML=`<div class="view on"><section><div class="container">
+<button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7;margin-bottom:20px" onclick="openCourse('${cid}')">← ${c.title}</button>
+<div class="lesson-wrap">
+<div class="curriculum"><h4>Curriculum</h4>${c.lessons.map((x,i)=>`<div class="cur-item ${doneLessons(cid).includes(i)?"done":""} ${i===li?"cur":""}" onclick="openLesson('${cid}',${i})"><span class="n">${doneLessons(cid).includes(i)?"✓":i+1}</span><span>${x.t}</span></div>`).join("")}</div>
+<div class="lesson-body">
+  <span class="kicker">Lesson ${li+1} of ${c.lessons.length}</span>
+  <h2>${l.t}</h2><div class="lmeta">${l.m} min read · ${c.title}</div>
+  ${l.b}
+  <div class="lesson-nav">
+    <button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7" ${li===0?"disabled style='opacity:.4;color:var(--navy);background:#eef3f7'":""} onclick="openLesson('${cid}',${li-1})">← Previous</button>
+    ${!done?`<button class="btn btn-em" onclick="completeLesson('${cid}',${li})">Mark Complete & Take Quiz →</button>`:`<button class="btn btn-gold" onclick="openQuiz('${cid}',${li})">Retake Quiz →</button>`}
+    ${li<c.lessons.length-1?`<button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7" onclick="openLesson('${cid}',${li+1})">Next →</button>`:""}
+  </div>
+</div></div></div></section></div>`;}
+};
+function cardHTML(c){
+const p=pct(c.id),isE=enrolled(c.id);
+return `<div class="ccard" onclick="openCourse('${c.id}')">
+<div class="cbanner" style="background:linear-gradient(135deg,${c.grad[0]},${c.grad[1]})"><div style="font-size:44px;position:absolute;top:14px;right:16px;opacity:.85">${c.icon}</div><h3>${c.title}</h3></div>
+<div class="cbody">
+<div class="cmeta"><span class="pill">${c.cat}</span><span class="pill ${c.free?"free":""}">${c.free?"FREE":c.price}</span></div>
+<p>${c.desc.slice(0,130)}…</p>
+${isE&&p>0?`<div class="progressbar"><i style="width:${p}%"></i></div><small style="color:var(--muted)">${p}% complete</small>`:`<div class="cfoot"><span class="price">${c.free?"Free":c.price}</span><span style="color:var(--emerald);font-weight:700">${c.lessons.length} lessons →</span></div>`}
+</div></div>`}
+function searchGo(){const q=($("#hq")||{}).value||"";go("courses");VIEWS.courses(q)}
+function enroll(id){
+const c=courseById(id);
+if(c.free){S.enrolled=S.enrolled||{};S.enrolled[id]=true;save();openCourse(id);return}
+openModal(`<h3>Enroll in ${c.title}</h3>
+<p style="color:var(--muted);font-size:14px;margin:10px 0">One-time payment · Lifetime access · Certificate included</p>
+<div style="font-size:34px;font-weight:800;font-family:Sora;color:var(--navy)">${c.price}</div>
+<p style="font-size:14px;margin:12px 0"><b>Pay via Easypaisa / JazzCash / bank transfer</b>, then enter your Transaction ID (TID) below. We'll activate your enrollment within hours.</p>
+<input id="payName" placeholder="Your full name"><input id="payTid" placeholder="Transaction ID (TID)">
+<button class="btn btn-gold" style="width:100%;margin-top:10px" onclick="submitEnroll('${id}')">Submit & Activate</button>
+<p style="font-size:12px;color:var(--muted);margin-top:10px">Demo checkout — connect real payment numbers in the Pricing section.</p>`)}
+function submitEnroll(id){
+const n=($("#payName")||{}).value||"",t=(($("#payTid")||{}).value||"").trim();
+if(!n||!t){toast("Please enter your name and Transaction ID.");return}
+S.enrolled=S.enrolled||{};S.enrolled[id]=true;if(n)S.name=n;save();closeModal();toast("Enrollment received! Welcome to "+courseById(id).title);openCourse(id)}
+function completeLesson(cid,li){
+S.done=S.done||{};S.done[cid]=S.done[cid]||[];
+if(!S.done[cid].includes(li))S.done[cid].push(li);
+save();toast("Lesson complete! Now test yourself.");openQuiz(cid,li)}
+/* ---------- quiz / dashboard / pricing / about / certificate ---------- */
+Object.assign(VIEWS,{
+quiz(cid,li){
+const c=courseById(cid),Q=c.quiz;
+$("#app").innerHTML=`<div class="view on"><section><div class="container">
+<div class="quiz-box">
+<span class="kicker">Quiz · Lesson ${li+1}</span>
+<h2 style="margin-bottom:6px">${c.lessons[li].t}</h2>
+<p style="color:var(--muted);font-size:14px;margin-bottom:24px">${Q.length} questions · instant feedback · 70% to pass</p>
+${Q.map((q,i)=>`<div class="q" id="q${i}"><h4>${i+1}. ${q.q}</h4>
+${q.o.map((o,j)=>`<button class="opt" data-q="${i}" data-o="${j}" onclick="answer(${i},${j},this)">${o}</button>`).join("")}
+<div class="why" id="w${i}"></div></div>`).join("")}
+<div style="text-align:center;margin-top:10px"><button class="btn btn-em" onclick="finishQuiz('${cid}',${li})">Submit Quiz</button>
+<button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7" onclick="openLesson('${cid}',${li})">Back to lesson</button></div>
+</div></div></section></div>`;
+window._Q={cid,li,Q,ans:{}};},
+dashboard(){
+const cards=COURSES.map(c=>{const p=pct(c.id),isE=enrolled(c.id);
+return `<div class="dcard"><h3>${c.icon} ${c.title}</h3>
+${!isE?`<p style="color:var(--muted);font-size:14px">Not enrolled yet.</p><button class="btn btn-gold" style="margin-top:10px;padding:10px 20px" onclick="openCourse('${c.id}')">View course</button>`
+:`<div class="progressbar"><i style="width:${p}%"></i></div><p style="margin:10px 0;font-weight:700">${p}% complete</p>
+<button class="btn btn-em" style="padding:10px 20px" onclick="openCourse('${c.id}')">${p===100?"Review course":"Continue learning →"}</button>
+${p===100?`<button class="btn btn-gold" style="padding:10px 20px;margin-left:8px" onclick="VIEWS.certificate('${c.id}')">🎓 Certificate</button>`:""}`}</div>`}).join("");
+const totalDone=COURSES.reduce((a,c)=>a+doneLessons(c.id).length,0);
+const totalLessons=COURSES.reduce((a,c)=>a+c.lessons.length,0);
+$("#app").innerHTML=`<div class="view on"><section><div class="container">
+<span class="kicker">My learning</span><h2 class="stitle">Welcome${S.name?", "+S.name.split(" ")[0]:""} — keep soaring</h2>
+<p class="ssub">${totalDone} of ${totalLessons} lessons completed across all courses.</p>
+<div class="dash-grid">${cards}</div>
+<div style="margin-top:30px;text-align:center"><button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7" onclick="if(confirm('Reset all progress?')){localStorage.removeItem('shaheen_v1');location.reload()}">Reset all progress</button></div>
+</div></section></div>`;},
+pricing(){
+$("#app").innerHTML=`<div class="view on"><section><div class="container" style="text-align:center">
+<span class="kicker">Pricing</span><h2 class="stitle">Simple, honest pricing</h2>
+<p class="ssub" style="margin:0 auto 40px">Start free. Upgrade when you're ready. Every paid course includes lifetime access and a certificate.</p>
+<div class="pricing" style="text-align:left">
+<div class="plan"><h3>Free Flyer</h3><div class="amt">PKR 0</div>
+<ul><li>2 full courses free (Habits, Student Success)</li><li>All quizzes & explanations</li><li>Progress dashboard</li><li>Community access</li></ul>
+<button class="btn btn-em" onclick="go('courses')">Start Free</button></div>
+<div class="plan hot"><span class="tag">MOST POPULAR</span><h3>Shaheen Plus</h3><div class="amt">PKR 499<small style="font-size:15px;color:var(--muted)">/month</small></div>
+<ul><li><b>All 6 courses</b> unlocked</li><li>Certificates for every course</li><li>New courses monthly</li><li>Priority Q&A with instructors</li><li>Downloadable lesson notes</li></ul>
+<button class="btn btn-gold" onclick="plusModal()">Go Plus</button></div>
+<div class="plan"><h3>Institution</h3><div class="amt">Custom</div>
+<ul><li>For schools & madrasas</li><li>Teacher dashboard & reports</li><li>Bulk student enrollments</li><li>Custom certificates with your logo</li><li>Dedicated support</li></ul>
+<button class="btn btn-em" onclick="openModal('<h3>Institution enquiry</h3><p style=color:var(--muted)>Tell us about your school.</p><input placeholder=School name><input placeholder=Contact email><input placeholder=Number of students><button class=\\'btn btn-gold\\' style=width:100%;margin-top:10px onclick=\\'closeModal();toast(&quot;Enquiry sent! We reply within 24 hours.&quot;)\\'>Send Enquiry</button>')">Contact Us</button></div>
+</div>
+<div class="faq" style="margin-top:60px;text-align:left"><h2 class="stitle" style="text-align:center">Questions</h2>
+<details><summary>How do I pay?</summary><p>Easypaisa, JazzCash or bank transfer. Enter your Transaction ID at enrollment and we activate within hours. International learners can use bank transfer — contact us.</p></details>
+<details><summary>Are certificates recognized?</summary><p>Certificates carry your name, the course, and a completion ID. They demonstrate real assessed learning — every course ends with a graded quiz.</p></details>
+<details><summary>Can I learn at my own pace?</summary><p>Completely. Your progress saves in your browser automatically — start on your phone, continue on your laptop.</p></details>
+<details><summary>Is there an Urdu version?</summary><p>Key terms and quotes appear with Urdu where it matters most. Full Urdu tracks are on the roadmap — tell us you want them!</p></details>
+</div></div></section></div>`;},
+about(){
+$("#app").innerHTML=`<div class="view on">
+<section><div class="container"><div class="instructor">
+<div><div class="avatar">SA</div></div>
+<div><span class="badge">Founder & lead instructor</span>
+<h2 style="margin-top:12px">Dr. S. Ahmad</h2>
+<p><b style="color:var(--gold)">Educationist · Psychologist · Islamic Scholar · Mentor · Author</b></p>
+<p>Two decades across classrooms, clinics and scholarship. Author of <em>The Deciding Heart</em> (12 chapters on the psychology and Islamic art of decision-making) and <em>Word of Mouth</em> (13 chapters on how speech builds or breaks bonds) — plus 20+ books on human growth.</p>
+<p>Shaheen Academy distills that lifetime of learning into structured, quiz-tested courses: the depth of a book, the clarity of a classroom, the convenience of your phone.</p>
+<p style="color:var(--gold-l)"><em>"The shaheen (falcon) flies highest not because the sky is easy, but because it was built for altitude. So are you."</em></p>
+</div></div></div></section>
+<section><div class="container"><span class="kicker">FAQ</span><h2 class="stitle">Good questions</h2><div class="faq">
+<details><summary>Why "Shaheen"?</summary><p>The shaheen falcon is Iqbal's symbol of the ideal youth — high-flying, self-reliant, unwilling to scavenge. This academy is built for learners who refuse low skies.</p></details>
+<details><summary>How is this different from YouTube tutorials?</summary><p>Structure, testing and proof. Every lesson ends with a graded quiz with explanations, your progress is tracked, and you earn a certificate — a complete learning loop, not scattered videos.</p></details>
+<details><summary>Who is it for?</summary><p>Students (Matric to university), professionals, parents and any curious mind — roughly ages 13+. Courses are labeled by level.</p></details>
+<details><summary>How do I contact support?</summary><p>WhatsApp +92-3XX-XXXXXXX or support@shaheenacademy.example — we reply within 24 hours.</p></details>
+</div></div></section></div>`;},
+certificate(cid){
+const c=courseById(cid);
+const nm=(S.name||"").trim();
+$("#app").innerHTML=`<div class="view on"><section><div class="container">
+<div class="noprint" style="max-width:820px;margin:0 auto 24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+<input id="certName" placeholder="Enter your full name for the certificate" value="${nm}" style="flex:1;border:2px solid var(--line);border-radius:12px;padding:13px 16px;font-size:15px;min-width:220px">
+<button class="btn btn-em" onclick="S.name=document.getElementById('certName').value;save();VIEWS.certificate('${cid}')">Update Name</button>
+<button class="btn btn-gold" onclick="window.print()">🖨 Print / Save PDF</button>
+</div>
+<div class="cert">
+<div style="font-size:56px">🦅</div>
+<h1>CERTIFICATE</h1>
+<p style="letter-spacing:4px;color:var(--muted);font-size:13px">OF COMPLETION</p>
+<p style="margin-top:18px;color:var(--muted)">This is proudly presented to</p>
+<div class="cname">${nm||"Your Name Here"}</div>
+<p>for successfully completing all lessons and assessments of</p>
+<h2 style="color:var(--emerald-d);margin:10px 0">${c.icon} ${c.title}</h2>
+<p style="color:var(--muted);font-size:14px">Shaheen Academy · ${c.dur} · ${new Date().toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})}</p>
+<div style="display:flex;justify-content:space-between;margin-top:40px;font-size:14px;color:var(--muted)">
+<div><div style="border-top:2px solid var(--navy);padding-top:8px;min-width:180px">Dr. S. Ahmad<br>Founder, Shaheen Academy</div></div>
+<div><div style="border-top:2px solid var(--navy);padding-top:8px;min-width:180px">Certificate ID: SHN-${cid.slice(0,4).toUpperCase()}-${String(Date.now()).slice(-6)}</div></div>
+</div></div>
+<div class="noprint" style="text-align:center;margin-top:26px"><button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7" onclick="go('dashboard')">← Back to My Learning</button></div>
+</div></section></div>`;}
+});
+/* ---------- quiz logic ---------- */
+function answer(qi,oi,btn){
+const Q=window._Q;if(!Q)return;
+if(Q.ans[qi]!==undefined)return;
+Q.ans[qi]=oi;
+const box=document.getElementById("q"+qi);
+box.querySelectorAll(".opt").forEach(b=>b.classList.remove("sel"));
+btn.classList.add("sel");
+const q=Q.Q[qi];
+box.querySelectorAll(".opt").forEach(b=>{
+const o=+b.dataset.o;
+if(o===q.a)b.classList.add("right");else if(o===oi)b.classList.add("wrong");b.style.pointerEvents="none"});
+const w=document.getElementById("w"+qi);
+w.innerHTML=(oi===q.a?"✅ Correct. ":"❌ Not quite. ")+q.w;w.classList.add("show")}
+function finishQuiz(cid,li){
+const Q=window._Q;if(!Q)return;
+if(Object.keys(Q.ans).length<Q.Q.length){toast("Answer all questions first.");return}
+let score=0;Q.Q.forEach((q,i)=>{if(Q.ans[i]===q.a)score++});
+const pctS=Math.round(score/Q.Q.length*100);
+S.quiz=S.quiz||{};S.quiz[cid]=S.quiz[cid]||{};
+const prev=S.quiz[cid][li]||0;if(pctS>prev)S.quiz[cid][li]=pctS;save();
+const pass=pctS>=70;
+const c=courseById(cid),allDone=c.lessons.every((_,i)=>doneLessons(cid).includes(i));
+$("#app").innerHTML=`<div class="view on"><section><div class="container"><div class="quiz-box"><div class="score-hero">
+<div class="score-ring" style="background:${pass?"linear-gradient(135deg,#0e7c5b,#0a5f45)":"linear-gradient(135deg,#c0392b,#7b241c)"}">${pctS}%</div>
+<h2>${pass?"Mashallah — Quiz Passed! 🎉":"Keep Going — ${70-pctS}% More Needed"}</h2>
+<p style="color:var(--muted);margin:12px 0">You scored ${score} out of ${Q.Q.length}.${pass?" Lesson mastered.":" Review the lesson and try again — you only need 70%."}</p>
+${pass&&allDone?`<div style="background:#fdf9ec;border:2px dashed var(--gold);border-radius:14px;padding:20px;margin:18px 0"><b>🏆 Course complete!</b><br><button class="btn btn-gold" style="margin-top:12px" onclick="VIEWS.certificate('${cid}')">Get My Certificate</button></div>`:""}
+<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+${li<c.lessons.length-1?`<button class="btn btn-em" onclick="openLesson('${cid}',${li+1})">Next Lesson →</button>`:`<button class="btn btn-em" onclick="openCourse('${cid}')">Back to Course</button>`}
+<button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7" onclick="openQuiz('${cid}',${li})">Retake Quiz</button>
+</div></div></div></div></section></div>`;window.scrollTo({top:0})}
+/* ---------- modal / misc ---------- */
+function openModal(html){$("#modalBox").innerHTML=html+`<div style="text-align:right;margin-top:14px"><button class="btn btn-ghost" style="color:var(--navy);background:#eef3f7;padding:10px 20px" onclick="closeModal()">Close</button></div>`;$("#modal").classList.add("on")}
+function closeModal(){$("#modal").classList.remove("on")}
+$("#modal").addEventListener("click",e=>{if(e.target.id==="modal")closeModal()});
+function plusModal(){openModal(`<h3>Shaheen Plus — PKR 499/month</h3><p style="color:var(--muted);font-size:14px;margin:10px 0">All 6 courses unlocked · certificates · new monthly courses.</p><p style="font-size:14px"><b>Pay via Easypaisa / JazzCash</b>, then enter your TID:</p><input id="plusName" placeholder="Your full name"><input id="plusTid" placeholder="Transaction ID (TID)"><button class="btn btn-gold" style="width:100%;margin-top:10px" onclick="(function(){const n=document.getElementById('plusName').value,t=document.getElementById('plusTid').value.trim();if(!n||!t){toast('Enter name and TID.');return}S.plus=true;if(n)S.name=n;save();closeModal();toast('Welcome to Shaheen Plus! All courses unlocked.');Object.keys(COURSES).forEach(k=>{});S.enrolled=S.enrolled||{};COURSES.forEach(c=>S.enrolled[c.id]=true);save();go('courses')})()">Activate Plus</button>`)}
+/* ---------- init ---------- */
+(function(){
+S.enrolled=S.enrolled||{};
+COURSES.filter(c=>c.free).forEach(c=>S.enrolled[c.id]=true);
+save();go("home")})();
+</script>
+</body>
+</html>
