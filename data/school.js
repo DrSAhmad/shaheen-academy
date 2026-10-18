@@ -4,7 +4,7 @@
 window.SHAHEEN_TRACKS = window.SHAHEEN_TRACKS || {};
 (function () {
   var T = window.SHAHEEN_TRACKS['school'] = window.SHAHEEN_TRACKS['school'] || {
-    meta: {"id":"school","title":"School","urdu":"اسکول","tagline":"Punjab Board · Classes 1–12","icon":"🏫"},
+    meta: {"id":"school","title":"School","urdu":"اسکول","tagline":"All Pakistan boards + Cambridge · Classes 1–12","icon":"🏫"},
     courses: []
   };
   var seen = {};
