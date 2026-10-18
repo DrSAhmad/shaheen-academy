@@ -49,6 +49,12 @@
   <script src="./app.js" defer></script>
 </head>
 <body>
+  <!-- v2: top utility bar — live date (left) + visitor location (right), filled by JS -->
+  <div class="utility-bar">
+    <span class="util-item" id="util-date">Loading date…</span>
+    <span class="util-item" id="util-location">📍 Pakistan</span>
+  </div>
+
   <header class="app-header">
     <a class="brand" href="#/home" aria-label="Shaheen Academy home">
       <span class="brand-mark" aria-hidden="true">
@@ -64,6 +70,8 @@
         <span class="brand-tagline">Learn Without Limits</span>
       </span>
     </a>
+    <!-- v2: auth area — "Join / Sign in" button or logged-in user chip, rendered by JS -->
+    <div id="auth-area" aria-live="polite"></div>
   </header>
 
   <main id="app" aria-live="polite">
@@ -88,6 +96,13 @@
       <span class="nav-icon" aria-hidden="true">📊</span>
       <span class="nav-label">My Progress</span>
     </a>
+    <a href="#/live" data-route="live">
+      <span class="nav-icon" aria-hidden="true">🎥</span>
+      <span class="nav-label">Live</span>
+    </a>
   </nav>
+
+  <!-- v2: modal root — auth dialog + mockup classroom are rendered here by JS -->
+  <div id="modal-root"></div>
 </body>
 </html>
