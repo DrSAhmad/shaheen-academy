@@ -8,6 +8,20 @@
   <title>Shaheen Academy — Learn Without Limits</title>
   <meta name="description" content="Shaheen Academy: free, mobile-first e-learning — school curriculum, test prep, and practical skills. Learn without limits.">
 
+  <!-- Social share preview -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Shaheen Academy">
+  <meta property="og:title" content="Shaheen Academy — Learn Without Limits">
+  <meta property="og:description" content="Free e-learning for Pakistan: Punjab Board Classes 1–12, MDCAT/ECAT/CSS test prep, and practical skills. Lessons, quizzes, XP & certificates. Free forever.">
+  <meta property="og:url" content="https://drsahmad.github.io/shaheen-academy/">
+  <meta property="og:image" content="https://drsahmad.github.io/shaheen-academy/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Shaheen Academy — Learn Without Limits">
+  <meta name="twitter:description" content="Free e-learning for Pakistan: Punjab Board Classes 1–12, MDCAT/ECAT/CSS test prep, and practical skills. Free forever.">
+  <meta name="twitter:image" content="https://drsahmad.github.io/shaheen-academy/og-image.png">
+
   <!-- PWA -->
   <link rel="manifest" href="./manifest.json">
   <link rel="icon" type="image/svg+xml" href="./icons/favicon.svg">
@@ -45,6 +59,7 @@
   <script src="./data/school-other.js" defer></script>
   <script src="./data/testprep.js" defer></script>
   <script src="./data/skills.js" defer></script>
+  <script src="./data/blog.js" defer></script>
   <!-- App engine -->
   <script src="./app.js" defer></script>
 </head>
@@ -104,5 +119,17 @@
 
   <!-- v2: modal root — auth dialog + mockup classroom are rendered here by JS -->
   <div id="modal-root"></div>
+
+  <!-- v3: site footer -->
+  <footer class="site-footer" aria-label="Site footer">
+    <div class="footer-links">
+      <a href="#/about">About</a>
+      <a href="#/blog">Blog</a>
+      <a href="#/contact">Contact</a>
+      <a href="#/live">Live Classes</a>
+      <a href="#/home">Home</a>
+    </div>
+    <p class="footer-note">🦅 Shaheen Academy — Learn Without Limits · Free forever</p>
+  </footer>
 </body>
 </html>
