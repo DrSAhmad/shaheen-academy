@@ -807,3 +807,73 @@ body.modal-open { overflow: hidden; }
   100% { transform: scale(1); }
 }
 .visitor-sub { color: var(--muted); font-size: 0.85rem; margin-top: 2px; }
+
+/* ============================================================
+   Section 16 — Mock Test (v4): hero card, hub, timer, palette,
+   results, chapter breakdown, answer review.
+   ============================================================ */
+.mock-hero {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, var(--emerald-dark) 0%, var(--emerald) 70%, #05906a 100%);
+  color: #fff; border: none; margin: 14px 0 4px; padding: 16px 18px;
+  box-shadow: 0 4px 16px rgba(3, 77, 56, 0.25);
+}
+.mock-hero-icon { font-size: 2rem; line-height: 1; }
+.mock-hero-body { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.mock-hero-title { font-weight: 700; font-size: 1.15rem; }
+.mock-hero-sub { font-size: 0.82rem; opacity: 0.85; }
+.mock-hero .track-arrow { color: var(--gold-light); font-size: 1.6rem; }
+
+.timer-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--emerald-deep); color: #fff; border-radius: var(--radius-sm);
+  padding: 10px 14px; margin: 10px 0; position: sticky; top: 0; z-index: 5;
+}
+.mock-timer { font-weight: 700; font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.mock-timer.timer-danger { color: #ffb4a8; animation: livePulse 1s ease-in-out infinite; }
+.mock-warn {
+  background: var(--danger-soft); color: var(--danger); border: 1px solid var(--danger);
+  border-radius: var(--radius-sm); padding: 8px 12px; margin: 0 0 10px; font-size: 0.85rem;
+}
+
+.palette { margin: 10px 0; }
+.palette summary {
+  cursor: pointer; font-weight: 600; color: var(--emerald-dark);
+  padding: 8px 4px; font-size: 0.95rem;
+}
+.palette-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 8px; padding: 10px 2px 4px;
+}
+.pal-btn {
+  aspect-ratio: 1; border-radius: 10px; border: 2px solid var(--line);
+  background: #fff; color: var(--muted); font-weight: 700; font-size: 0.9rem;
+  cursor: pointer; min-height: 40px;
+}
+.pal-btn.ans { background: var(--emerald-soft); border-color: var(--emerald); color: var(--emerald-deep); }
+.pal-btn.cur { border-color: var(--gold); box-shadow: 0 0 0 2px var(--gold-light); color: var(--ink); }
+
+.quiz-option.picked { border-color: var(--emerald); background: var(--emerald-soft); }
+.quiz-option.picked .opt-key { background: var(--emerald); color: #fff; }
+.btn-sm { padding: 8px 14px; font-size: 0.85rem; }
+
+.mock-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 14px 0;
+}
+.mock-stat {
+  background: var(--bg); border-radius: var(--radius-sm); padding: 10px 4px; text-align: center;
+}
+.mock-stat-num { font-weight: 700; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.mock-stat-num.ok { color: var(--ok); }
+.mock-stat-num.bad { color: var(--danger); }
+.mock-stat-label { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+.ch-row { margin: 12px 0; }
+.ch-row-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  gap: 10px; font-size: 0.9rem; margin-bottom: 4px;
+}
+.ch-row .small { font-size: 0.82rem; }
+
+.review-item { margin: 12px 0; }
+.review-item .quiz-question { font-size: 1rem; }
