@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Shaheen Academy falcon">
+  <rect x="0" y="0" width="512" height="512" rx="116" fill="#034d38"/>
+  <path fill="#c9a227" d="M150 400 L160 230 Q165 195 195 178 L250 150 L300 160 Q360 172 385 205 L400 232 L352 228 Q358 260 348 292 Q335 345 295 380 L235 408 Z"/>
+  <path fill="#034d38" d="M270 212 Q292 202 312 210 Q296 226 274 224 Z"/>
+  <path fill="#8a6d1a" opacity="0.6" d="M352 228 Q358 260 348 292 L330 285 Q340 260 336 232 Z"/>
+</svg>
