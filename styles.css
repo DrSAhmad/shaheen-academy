@@ -15,6 +15,7 @@
     11. Search
     12. Bottom nav
     13. Utilities, focus, motion
+    14. Auto-update prompt
    ============================================================ */
 
 /* ---------- 1. Tokens & base ---------- */
@@ -75,7 +76,7 @@ a { color: var(--emerald); }
   position: sticky;
   top: 0;
   z-index: 50;
-  height: var(--header-h);
+  min-height: var(--header-h); /* grows with content — never clips brand text over the utility bar */
   background: linear-gradient(135deg, var(--emerald-dark), var(--emerald));
   display: flex;
   align-items: center;
@@ -91,12 +92,16 @@ a { color: var(--emerald); }
   text-decoration: none;
   color: #fff;
   min-height: 44px;
+  min-width: 0; /* allow shrink in the header row on narrow screens */
 }
 
 .brand-mark svg { display: block; border-radius: 8px; }
 
-.brand-text { display: flex; flex-direction: column; }
-.brand-name { font-weight: 700; font-size: 1.1rem; letter-spacing: 0.2px; }
+.brand-text { display: flex; flex-direction: column; min-width: 0; }
+.brand-name {
+  font-weight: 700; font-size: 1.1rem; letter-spacing: 0.2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* never wraps/splits over the utility bar */
+}
 .brand-tagline { font-size: 0.75rem; color: var(--gold-light); letter-spacing: 0.4px; }
 
 /* ---------- 3. Layout & cards ---------- */
@@ -888,3 +893,46 @@ body.modal-open { overflow: hidden; }
 
 .review-item { margin: 12px 0; }
 .review-item .quiz-question { font-size: 1rem; }
+
+/* ---------- 14. Auto-update prompt (added 2026-10-18) ---------- */
+/* Fixed bar shown when a newer site version is ready. On mobile it
+   floats above the bottom nav; on desktop it docks bottom-right. */
+.sa-update-toast {
+  position: fixed;
+  left: 12px; right: 12px;
+  bottom: calc(var(--nav-h) + 12px + env(safe-area-inset-bottom, 0px));
+  z-index: 9999;
+  display: flex; align-items: center; gap: 10px;
+  background: var(--emerald-deep);
+  color: #ffffff;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+  animation: sa-toast-in 0.35s ease-out;
+}
+.sa-update-toast[hidden] { display: none; }
+.sa-update-msg { flex: 1; font-size: 0.9rem; font-weight: 600; line-height: 1.35; }
+.sa-update-btn {
+  flex: none;
+  background: var(--gold);
+  color: var(--emerald-deep);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 18px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.sa-update-btn:disabled { opacity: 0.7; cursor: default; }
+@keyframes sa-toast-in {
+  from { transform: translateY(16px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (min-width: 640px) {
+  .sa-update-toast {
+    left: auto; right: 24px;
+    bottom: 24px;
+    max-width: 400px;
+  }
+}

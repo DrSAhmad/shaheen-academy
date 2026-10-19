@@ -1,10 +1,17 @@
 /* ============================================================
-   Shaheen Academy service worker — v3
-   Bump CACHE (e.g. 'shaheen-v4') whenever index.html, styles.css,
+   Shaheen Academy service worker — v7
+   Bump CACHE (e.g. 'shaheen-v8') whenever index.html, styles.css,
    app.js, or any data/icon/manifest file changes, so users get
    the fresh version. Old caches are deleted on activate.
+
+   Update policy (added 2026-10-18): the new worker installs in
+   the background but WAITS for the page's go-ahead — no forced
+   mid-session takeover. app.js shows a "New version available,
+   tap to refresh" toast when the update is ready; tapping it
+   sends SKIP_WAITING here, the worker activates, claims clients,
+   and the page reloads exactly once.
    ============================================================ */
-var CACHE = 'shaheen-v6';
+var CACHE = 'shaheen-v7';
 
 var PRECACHE = [
   './',
@@ -31,16 +38,23 @@ var PRECACHE = [
   './icons/favicon.svg'
 ];
 
-/* Install: precache the app shell. Skip waiting so the new
-   version takes over immediately after install. */
+/* Install: precache the app shell. The new worker WAITS here
+   (no skipWaiting) until the page asks it to take over — that is
+   what lets the app show the "New version available" prompt
+   instead of forcing a mid-session update. */
 self.addEventListener('install', function (event) {
   event.waitUntil(
     caches.open(CACHE).then(function (cache) {
       return cache.addAll(PRECACHE);
-    }).then(function () {
-      return self.skipWaiting();
     })
   );
+});
+
+/* Take over only when the user tapped "Refresh" in the prompt. */
+self.addEventListener('message', function (event) {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 /* Activate: delete any caches from older versions, then claim clients. */

@@ -1748,9 +1748,51 @@
   render();
 
   // Register the service worker for offline + installability (https only).
+  // Update flow (added 2026-10-18): a new worker installs silently in the
+  // background and waits; when it is ready we show a "new version
+  // available" toast and only swap versions when the user taps Refresh —
+  // no more stale-cache confusion, no mid-session takeovers.
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+    var saRefreshing = false; // guards against double reloads
+    function showSaUpdateToast() {
+      var toast = document.getElementById('sa-update-toast');
+      if (!toast) return;
+      toast.hidden = false;
+      var btn = document.getElementById('sa-update-refresh');
+      if (btn && !btn.__saWired) {
+        btn.__saWired = true;
+        btn.addEventListener('click', function () {
+          btn.disabled = true;
+          btn.textContent = 'Updating…';
+          navigator.serviceWorker.getRegistration().then(function (reg) {
+            if (reg && reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            else window.location.reload();
+          });
+        });
+      }
+    }
+    function watchSaUpdate(worker) {
+      if (!worker) return;
+      worker.addEventListener('statechange', function () {
+        // 'installed' + an active controller means a NEW version is ready.
+        if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+          showSaUpdateToast();
+        }
+      });
+    }
     window.addEventListener('load', function () {
-      navigator.serviceWorker.register('./sw.js').catch(function () { /* offline-first is best-effort */ });
+      navigator.serviceWorker.register('./sw.js').then(function (reg) {
+        // An update may already be waiting (e.g. installed on an earlier visit).
+        if (reg.waiting && navigator.serviceWorker.controller) showSaUpdateToast();
+        reg.addEventListener('updatefound', function () { watchSaUpdate(reg.installing); });
+        watchSaUpdate(reg.installing);
+      }).catch(function () { /* offline-first is best-effort */ });
+    });
+    // The new worker takes control after the user taps Refresh: reload once.
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (saRefreshing) return;
+      saRefreshing = true;
+      window.location.reload();
     });
   }
 })();
